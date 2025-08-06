@@ -8,6 +8,7 @@ const productsRouter = require('./routes/products');
 const cartRouter = require('./routes/cart');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
+const setupSwagger = require('./swagger');
 
 app.use(express.json());// This enables parsing JSON in request bodies
 
@@ -22,6 +23,7 @@ app.use('/orders', ordersRouter);
 
 app.use('/users', usersRouter);
 
+setupSwagger(app);
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
