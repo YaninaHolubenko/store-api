@@ -1,7 +1,14 @@
 //products.js
 const express = require('express');
+const { validationResult } = require('express-validator');
 const router = express.Router();
 const pool = require('../db/index'); // Import database connection
+
+const {
+    createProductRules,
+    updateProductRules,
+    idParamRule
+} = require('../validators/product');
 
 /**
  * @openapi
@@ -100,21 +107,31 @@ router.get('/', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 // GET /products/:id 
-router.get('/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Product not found' });
+router.get(
+    '/:id',
+    idParamRule,
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
+        next();
+    },
+    async (req, res) => {
+        const { id } = req.params;
+        try {
+            const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
 
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
 
 /**
  * @openapi
@@ -175,19 +192,27 @@ router.get('/:id', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 // POST /products - create a new product
-router.post('/', async (req, res) => {
-    const { name, description, price, stock, image_url } = req.body;
-    try {
-        const result = await pool.query(
-            'INSERT INTO products (name, description, price, stock, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [name, description, price, stock, image_url]
-        );
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+router.post('/',
+    createProductRules,
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    }, async (req, res) => {
+        const { name, description, price, stock, image_url } = req.body;
+        try {
+            const result = await pool.query(
+                'INSERT INTO products (name, description, price, stock, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [name, description, price, stock, image_url]
+            );
+            res.status(201).json(result.rows[0]);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
 
 /**
  * @openapi
@@ -256,29 +281,38 @@ router.post('/', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 // PUT /products/:id 
-router.put('/:id', async (req, res) => {
-    const { id } = req.params;
-    const { name, description, price, stock, image_url } = req.body;
+router.put('/:id',
+    idParamRule,
+    updateProductRules,
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    }, async (req, res) => {
+        const { id } = req.params;
+        const { name, description, price, stock, image_url } = req.body;
 
-    try {
-        const result = await pool.query(
-            `UPDATE products 
+        try {
+            const result = await pool.query(
+                `UPDATE products 
              SET name = $1, description = $2, price = $3, stock = $4, image_url = $5 
              WHERE id = $6 
              RETURNING *`,
-            [name, description, price, stock, image_url, id]
-        );
+                [name, description, price, stock, image_url, id]
+            );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Product not found' });
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Server error' });
         }
-
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+    });
 
 /**
  * @openapi
@@ -335,22 +369,31 @@ router.put('/:id', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 // DELETE /products/:id 
-router.delete('/:id', async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const result = await pool.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Product not found' });
+router.delete('/:id',
+    idParamRule,
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
+        next();
+    },
+    async (req, res) => {
+        const { id } = req.params;
 
-        res.json({ message: 'Product deleted', product: result.rows[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+        try {
+            const result = await pool.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            res.json({ message: 'Product deleted', product: result.rows[0] });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
 
 
 module.exports = router; // Export the router

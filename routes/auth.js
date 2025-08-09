@@ -1,7 +1,23 @@
-// routes/auth.js
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+const { validationResult } = require('express-validator');
+const { registerRules, loginRules } = require('../validators/auth');
 const authController = require('../controllers/authController');
+
+// Rate limiter for auth endpoints:
+// - max 20 registrations per hour per IP
+// - max 5 login attempts per minute per IP
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  message: { error: 'Too many registration attempts from this IP, please try again later' }
+});
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5,
+  message: { error: 'Too many login attempts from this IP, please try again later' }
+});
 
 /**
  * @openapi
@@ -32,36 +48,26 @@ const authController = require('../controllers/authController');
  *     responses:
  *       '201':
  *         description: User registered successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     username:
- *                       type: string
- *                     email:
- *                       type: string
- *                 token:
- *                   type: string
  *       '400':
  *         description: Validation error or username/email taken
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       '429':
+ *         description: Too many registration attempts
  *       '500':
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-router.post('/register', authController.register);
+router.post(
+  '/register',
+  registerLimiter,
+  registerRules,
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  authController.register
+);
 
 /**
  * @openapi
@@ -88,32 +94,29 @@ router.post('/register', authController.register);
  *     responses:
  *       '200':
  *         description: Token issued successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
+ *       '400':
+ *         description: Validation error
  *       '401':
  *         description: Missing credentials
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '403':
  *         description: Invalid credentials
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       '429':
+ *         description: Too many login attempts
  *       '500':
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', authController.login);
+router.post(
+  '/login',
+  loginLimiter,
+  loginRules,
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  authController.login
+);
 
 module.exports = router;

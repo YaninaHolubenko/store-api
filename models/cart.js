@@ -94,6 +94,18 @@ async function removeItem(cartItemId, userId) {
   return res.rows.length > 0;
 }
 
+/**
+ * Check if a given cartId belongs to the given userId
+ * @returns {Promise<boolean>}
+ */
+async function userOwnsCart(cartId, userId) {
+  const result = await pool.query(
+    'SELECT 1 FROM carts WHERE id = $1 AND user_id = $2',
+    [cartId, userId]
+  );
+  return result.rows.length > 0;
+}
+
 module.exports = {
   findOrCreateByUser,
   getItemsWithProductDetails,
@@ -101,4 +113,5 @@ module.exports = {
   checkoutCart,
   updateItemQuantity,
   removeItem,
+  userOwnsCart,
 };

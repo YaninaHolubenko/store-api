@@ -47,8 +47,40 @@ async function checkout(req, res) {
   try {
     const userId = req.user.id;
     const cartId = parseInt(req.params.cartId, 10);
+
+    // 1) Verify cart ownership
+    const owns = await Cart.userOwnsCart(cartId, userId);
+    if (!owns) {
+      return res.status(404).json({ error: 'Cart not found' });
+    }
+
+    // 2) Ensure cart has items and compute total
+    const items = await Cart.getItemsWithProductDetails(cartId);
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: 'Cart is empty' });
+    }
+    const totalAmount = items.reduce(
+      (sum, it) => sum + Number(it.price) * Number(it.quantity),
+      0
+    );
+
+    // 3) Read payment details (already validated by express-validator in routes)
+    const { payment } = req.body || {};
+    if (!payment || !payment.card) {
+      return res.status(400).json({ error: 'Payment details are required' });
+    }
+
+    // Never log full card details in production!
+    const cleanCardNumber = String(payment.card.number || '').replace(/\D+/g, '');
+
+    // Fake decline rule for testing: if card number ends with '0000' -> decline
+    if (cleanCardNumber.endsWith('0000')) {
+      return res.status(402).json({ error: 'Payment declined' });
+    }
+
+    // 4) Create order from cart (model handles DB operations and clearing the cart)
     const result = await Cart.checkoutCart(cartId, userId);
-    res.status(201).json(result);
+    return res.status(201).json(result);
   } catch (err) {
     console.error(err);
     if (err.message === 'Cart empty') {
