@@ -28,18 +28,7 @@ router.use(authenticateToken);
  *               type: object
  *               properties:
  *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 42
- *                     username:
- *                       type: string
- *                       example: alice
- *                     email:
- *                       type: string
- *                       format: email
- *                       example: alice@example.com
+ *                   $ref: '#/components/schemas/User'
  *       '401':
  *         description: Missing or invalid token
  *         content:
@@ -53,6 +42,7 @@ router.use(authenticateToken);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+
 router.get('/', userController.getProfile);
 
 /**
@@ -62,6 +52,8 @@ router.get('/', userController.getProfile);
  *     summary: Retrieve a specific user's profile (self only)
  *     tags:
  *       - Users
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -72,10 +64,31 @@ router.get('/', userController.getProfile);
  *     responses:
  *       '200':
  *         description: User profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       '401':
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '403':
- *         description: Forbidden access
+ *         description: Forbidden access (trying to access another user's profile)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get(
     '/:id',
@@ -104,20 +117,11 @@ router.get(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *             example:
- *               username: alice
- *               email: alice@example.com
- *               password: NewPassw0rd!
+ *             $ref: '#/components/schemas/UserUpdateInput'
+ *           example:
+ *             username: alice
+ *             email: alice@example.com
+ *             password: NewPassw0rd!
  *     responses:
  *       '200':
  *         description: User profile updated successfully
@@ -127,15 +131,7 @@ router.get(
  *               type: object
  *               properties:
  *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     username:
- *                       type: string
- *                     email:
- *                       type: string
- *                       format: email
+ *                   $ref: '#/components/schemas/User'
  *       '400':
  *         description: Validation error (bad input data)
  *         content:
@@ -155,6 +151,7 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+
 router.put(
     '/',
     updateProfileRules,
@@ -185,12 +182,32 @@ router.put(
  *           type: integer
  *         description: User ID to delete
  *     responses:
- *       204:
- *         description: User deleted successfully
- *       403:
- *         description: Forbidden
- *       404:
+ *       '204':
+ *         description: User deleted successfully (No Content)
+ *       '401':
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '403':
+ *         description: Forbidden (trying to delete another user)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '404':
  *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete(
     '/:id',

@@ -31,12 +31,13 @@ router.use(authenticateToken);
  *                   description: ID of the user's cart
  *                 items:
  *                   type: array
+ *                   description: Cart items with product info
  *                   items:
  *                     type: object
  *                     properties:
  *                       cart_item_id:
  *                         type: integer
- *                       product_id:
+ *                       productId:
  *                         type: integer
  *                       name:
  *                         type: string
@@ -44,9 +45,9 @@ router.use(authenticateToken);
  *                         type: string
  *                       price:
  *                         type: number
+ *                         format: float
  *                       image_url:
  *                         type: string
- *                         format: uri
  *                       quantity:
  *                         type: integer
  *       401:
@@ -78,24 +79,51 @@ router.get('/', cartController.getCart);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - productId
- *               - quantity
- *             properties:
- *               productId:
- *                 type: integer
- *               quantity:
- *                 type: integer
+ *             $ref: '#/components/schemas/CartAddItemInput'
+ *           example:
+ *             productId: 1
+ *             quantity: 2
  *     responses:
  *       201:
  *         description: Item added or updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 item:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     productId:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
  *       400:
  *         description: Invalid product ID or quantity
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post(
   '/items',
@@ -171,8 +199,10 @@ router.post(
  *                   type: integer
  *                 totalAmount:
  *                   type: number
+ *                   format: float
  *                 status:
  *                   type: string
+ *                   example: pending
  *       '400':
  *         description: Validation error or empty cart
  *         content:
@@ -181,6 +211,10 @@ router.post(
  *               $ref: '#/components/schemas/Error'
  *       '401':
  *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '402':
  *         description: Payment declined
  *         content:
@@ -195,6 +229,10 @@ router.post(
  *               $ref: '#/components/schemas/Error'
  *       '500':
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post(
   '/:cartId/checkout',
@@ -250,12 +288,18 @@ router.post(
  *                   properties:
  *                     id:
  *                       type: integer
- *                     product_id:
+ *                     productId:
  *                       type: integer
  *                     quantity:
  *                       type: integer
  *       '400':
  *         description: Invalid quantity
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '401':
+ *         description: Missing or invalid token
  *         content:
  *           application/json:
  *             schema:
@@ -273,6 +317,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+
 router.patch(
   '/items/:id',
   updateItem,
@@ -306,10 +351,24 @@ router.patch(
  *     responses:
  *       '200':
  *         description: Cart item removed successfully
+ *       '401':
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '404':
- *         $ref: '#/components/schemas/Error'
+ *         description: Cart item not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '500':
- *         $ref: '#/components/schemas/Error'
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete('/items/:id', cartController.removeItem);
 

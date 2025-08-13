@@ -2,13 +2,19 @@
 const express = require('express');
 const { validationResult } = require('express-validator');
 const router = express.Router();
-const pool = require('../db/index'); // Import database connection
+const productController = require('../controllers/productController');
 
 const {
     createProductRules,
     updateProductRules,
     idParamRule
 } = require('../validators/product');
+
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    next();
+};
 
 /**
  * @openapi
@@ -25,21 +31,7 @@ const {
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   price:
- *                     type: number
- *                   stock:
- *                     type: integer
- *                   image_url:
- *                     type: string
- *                     format: uri
+ *                 $ref: '#/components/schemas/Product'
  *       '500':
  *         description: Server error
  *         content:
@@ -48,21 +40,13 @@ const {
  *               $ref: '#/components/schemas/Error'
  */
 // GET /products - returns all products
-router.get('/', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM products');
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+router.get('/', productController.list);
 
 /**
  * @openapi
  * /products/{id}:
  *   get:
- *     summary: Retrieve a single product by its ID
+ *     summary: Retrieve a single product by ID
  *     tags:
  *       - Products
  *     parameters:
@@ -74,25 +58,11 @@ router.get('/', async (req, res) => {
  *         description: ID of the product to retrieve
  *     responses:
  *       '200':
- *         description: A product object
+ *         description: Product object
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 stock:
- *                   type: integer
- *                 image_url:
- *                   type: string
- *                   format: uri
+ *               $ref: '#/components/schemas/Product'
  *       '404':
  *         description: Product not found
  *         content:
@@ -107,31 +77,7 @@ router.get('/', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 // GET /products/:id 
-router.get(
-    '/:id',
-    idParamRule,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    },
-    async (req, res) => {
-        const { id } = req.params;
-        try {
-            const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
-
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Product not found' });
-            }
-
-            res.json(result.rows[0]);
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Server error' });
-        }
-    });
+router.get('/:id', idParamRule, validate, productController.getOne);
 
 /**
  * @openapi
@@ -145,45 +91,20 @@ router.get(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               stock:
- *                 type: integer
- *               image_url:
- *                 type: string
- *                 format: uri
- *             required:
- *               - name
- *               - description
- *               - price
- *               - stock
+ *             $ref: '#/components/schemas/ProductInput'
  *     responses:
  *       '201':
  *         description: Product created successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 stock:
- *                   type: integer
- *                 image_url:
- *                   type: string
- *                   format: uri
+ *               $ref: '#/components/schemas/Product'
+ *       '400':
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '500':
  *         description: Server error
  *         content:
@@ -192,33 +113,13 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 // POST /products - create a new product
-router.post('/',
-    createProductRules,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    }, async (req, res) => {
-        const { name, description, price, stock, image_url } = req.body;
-        try {
-            const result = await pool.query(
-                'INSERT INTO products (name, description, price, stock, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [name, description, price, stock, image_url]
-            );
-            res.status(201).json(result.rows[0]);
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Server error' });
-        }
-    });
+router.post('/', createProductRules, validate, productController.create);
 
 /**
  * @openapi
  * /products/{id}:
  *   put:
- *     summary: Update an existing product by its ID
+ *     summary: Update an existing product by ID
  *     tags:
  *       - Products
  *     parameters:
@@ -233,40 +134,20 @@ router.post('/',
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               stock:
- *                 type: integer
- *               image_url:
- *                 type: string
- *                 format: uri
+ *             $ref: '#/components/schemas/ProductInput'
  *     responses:
  *       '200':
  *         description: Product updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 price:
- *                   type: number
- *                 stock:
- *                   type: integer
- *                 image_url:
- *                   type: string
- *                   format: uri
+ *               $ref: '#/components/schemas/Product'
+ *       '400':
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: Product not found
  *         content:
@@ -276,49 +157,18 @@ router.post('/',
  *       '500':
  *         description: Server error
  *         content:
-   *           application/json:
+ *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
 // PUT /products/:id 
-router.put('/:id',
-    idParamRule,
-    updateProductRules,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    }, async (req, res) => {
-        const { id } = req.params;
-        const { name, description, price, stock, image_url } = req.body;
-
-        try {
-            const result = await pool.query(
-                `UPDATE products 
-             SET name = $1, description = $2, price = $3, stock = $4, image_url = $5 
-             WHERE id = $6 
-             RETURNING *`,
-                [name, description, price, stock, image_url, id]
-            );
-
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Product not found' });
-            }
-
-            res.json(result.rows[0]);
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Server error' });
-        }
-    });
+router.put('/:id', [...idParamRule, ...updateProductRules], validate, productController.update);
 
 /**
  * @openapi
  * /products/{id}:
  *   delete:
- *     summary: Delete a product by its ID
+ *     summary: Delete a product by ID
  *     tags:
  *       - Products
  *     parameters:
@@ -329,32 +179,8 @@ router.put('/:id',
  *           type: integer
  *         description: ID of the product to delete
  *     responses:
- *       '200':
+ *       '204':
  *         description: Product deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Product deleted
- *                 product:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     name:
- *                       type: string
- *                     description:
- *                       type: string
- *                     price:
- *                       type: number
- *                     stock:
- *                       type: integer
- *                     image_url:
- *                       type: string
- *                       format: uri
  *       '404':
  *         description: Product not found
  *         content:
@@ -369,31 +195,7 @@ router.put('/:id',
  *               $ref: '#/components/schemas/Error'
  */
 // DELETE /products/:id 
-router.delete('/:id',
-    idParamRule,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    },
-    async (req, res) => {
-        const { id } = req.params;
-
-        try {
-            const result = await pool.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
-
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Product not found' });
-            }
-
-            res.json({ message: 'Product deleted', product: result.rows[0] });
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Server error' });
-        }
-    });
+router.delete('/:id', idParamRule, validate, productController.remove);
 
 
 module.exports = router; // Export the router

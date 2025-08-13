@@ -29,22 +29,7 @@ router.use(authenticateToken);
  *                 orders:
  *                   type: array
  *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                         example: 123
- *                       total_amount:
- *                         type: number
- *                         format: float
- *                         example: 149.99
- *                       status:
- *                         type: string
- *                         example: pending
- *                       created_at:
- *                         type: string
- *                         format: date-time
- *                         example: 2025-08-09T10:15:30.000Z
+ *                     $ref: '#/components/schemas/Order'
  *       '401':
  *         description: Missing or invalid token
  *         content:
@@ -85,22 +70,7 @@ router.get('/', orderController.listOrders);
  *               type: object
  *               properties:
  *                 order:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 123
- *                     total_amount:
- *                       type: number
- *                       format: float
- *                       example: 149.99
- *                     status:
- *                       type: string
- *                       example: pending
- *                     created_at:
- *                       type: string
- *                       format: date-time
- *                       example: 2025-08-09T10:15:30.000Z
+ *                   $ref: '#/components/schemas/Order'
  *                 items:
  *                   type: array
  *                   items:
@@ -108,23 +78,17 @@ router.get('/', orderController.listOrders);
  *                     properties:
  *                       order_item_id:
  *                         type: integer
- *                         example: 456
- *                       product_id:
+ *                       productId:
  *                         type: integer
- *                         example: 7
  *                       name:
  *                         type: string
- *                         example: Wireless Mouse
  *                       description:
  *                         type: string
- *                         example: Ergonomic 2.4GHz mouse
  *                       quantity:
  *                         type: integer
- *                         example: 2
  *                       price:
  *                         type: number
  *                         format: float
- *                         example: 29.99
  *       '401':
  *         description: Missing or invalid token
  *         content:
@@ -195,22 +159,7 @@ router.get('/:id',
  *               type: object
  *               properties:
  *                 order:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 123
- *                     total_amount:
- *                       type: number
- *                       format: float
- *                       example: 149.99
- *                     status:
- *                       type: string
- *                       example: shipped
- *                     created_at:
- *                       type: string
- *                       format: date-time
- *                       example: 2025-08-09T10:15:30.000Z
+ *                   $ref: '#/components/schemas/Order'
  *       '400':
  *         description: Validation error (missing/invalid status or id)
  *         content:
