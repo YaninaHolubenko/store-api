@@ -1,19 +1,24 @@
-//products.js
+// routes/products.js
 const express = require('express');
 const { validationResult } = require('express-validator');
 const router = express.Router();
 const productController = require('../controllers/productController');
 
+// Auth & role guards (project uses CommonJS + these paths)
+const authenticateToken = require('../middlewares/auth');      // verifies JWT, sets req.user.id
+const checkAdmin = require('../middlewares/checkAdmin');       // ensures req.user.role === 'admin'
+
 const {
-    createProductRules,
-    updateProductRules,
-    idParamRule
+  createProductRules,
+  updateProductRules,
+  idParamRule
 } = require('../validators/product');
 
+// Helper to send 400 on validation errors
 const validate = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-    next();
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  next();
 };
 
 /**
@@ -39,7 +44,7 @@ const validate = (req, res, next) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// GET /products - returns all products
+// GET /products - public
 router.get('/', productController.list);
 
 /**
@@ -76,16 +81,18 @@ router.get('/', productController.list);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// GET /products/:id 
+// GET /products/:id - public
 router.get('/:id', idParamRule, validate, productController.getOne);
 
 /**
  * @openapi
  * /products:
  *   post:
- *     summary: Create a new product
+ *     summary: Create a new product (admin only)
  *     tags:
  *       - Products
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -105,6 +112,18 @@ router.get('/:id', idParamRule, validate, productController.getOne);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       '401':
+ *         description: Unauthorized (missing/invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '403':
+ *         description: Forbidden (admin only)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '500':
  *         description: Server error
  *         content:
@@ -112,16 +131,25 @@ router.get('/:id', idParamRule, validate, productController.getOne);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// POST /products - create a new product
-router.post('/', createProductRules, validate, productController.create);
+// POST /products - admin only
+router.post(
+  '/',
+  authenticateToken,
+  checkAdmin,
+  createProductRules,
+  validate,
+  productController.create
+);
 
 /**
  * @openapi
  * /products/{id}:
  *   put:
- *     summary: Update an existing product by ID
+ *     summary: Update an existing product by ID (admin only)
  *     tags:
  *       - Products
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -148,6 +176,18 @@ router.post('/', createProductRules, validate, productController.create);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       '401':
+ *         description: Unauthorized (missing/invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '403':
+ *         description: Forbidden (admin only)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: Product not found
  *         content:
@@ -161,16 +201,25 @@ router.post('/', createProductRules, validate, productController.create);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// PUT /products/:id 
-router.put('/:id', [...idParamRule, ...updateProductRules], validate, productController.update);
+// PUT /products/:id - admin only
+router.put(
+  '/:id',
+  authenticateToken,
+  checkAdmin,
+  [...idParamRule, ...updateProductRules],
+  validate,
+  productController.update
+);
 
 /**
  * @openapi
  * /products/{id}:
  *   delete:
- *     summary: Delete a product by ID
+ *     summary: Delete a product by ID (admin only)
  *     tags:
  *       - Products
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -181,8 +230,26 @@ router.put('/:id', [...idParamRule, ...updateProductRules], validate, productCon
  *     responses:
  *       '204':
  *         description: Product deleted successfully
+ *       '401':
+ *         description: Unauthorized (missing/invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '403':
+ *         description: Forbidden (admin only)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '409':
+ *         description: Conflict (product is referenced by carts or orders)
  *         content:
  *           application/json:
  *             schema:
@@ -194,8 +261,15 @@ router.put('/:id', [...idParamRule, ...updateProductRules], validate, productCon
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// DELETE /products/:id 
-router.delete('/:id', idParamRule, validate, productController.remove);
 
+// DELETE /products/:id - admin only
+router.delete(
+  '/:id',
+  authenticateToken,
+  checkAdmin,
+  idParamRule,
+  validate,
+  productController.remove
+);
 
-module.exports = router; // Export the router
+module.exports = router;

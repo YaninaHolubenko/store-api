@@ -1,4 +1,4 @@
-//auth.js
+//routes/auth.js
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');

@@ -39,6 +39,15 @@ async function findById(id) {
   return res.rows[0] || null;
 }
 
+// Get user by id including role (used by checkAdmin middleware)
+async function findByIdWithRole(id) {
+  const res = await pool.query(
+    'SELECT id, username, email, role FROM users WHERE id = $1',
+    [id]
+  );
+  return res.rows[0] || null;
+}
+
 /**
  * Update a user by ID
  */
@@ -65,6 +74,7 @@ async function deleteById(id) {
 module.exports = {
   findByUsernameOrEmail,
   findById,
+  findByIdWithRole,
   create,
   updateById,
   deleteById
