@@ -55,7 +55,7 @@ async function updateProfile(req, res) {
     const { username, email, password } = req.body;
     let passwordHash;
     if (password) {
-      passwordHash = await bcrypt.hash(password, Number(process.env.SALT_ROUNDS));
+      passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS));
     }
     const updated = await User.updateById(userId, { username, email, passwordHash });
     if (!updated) {
@@ -64,6 +64,10 @@ async function updateProfile(req, res) {
     res.json({ user: updated });
   } catch (err) {
     console.error(err);
+    // Handle unique constraint violation (username/email already taken)
+    if (err && err.code === '23505') {
+      return res.status(409).json({ error: 'Username or email already in use' });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 }

@@ -50,25 +50,78 @@ async function addOrUpdateItem(cartId, productId, quantity) {
 }
 
 async function checkoutCart(cartId, userId) {
-  const items = await getItemsWithProductDetails(cartId);
-  if (items.length === 0) throw new Error('Cart empty');
+  const client = await pool.connect();
+  try {
+    // 1) Start SQL transaction
+    await client.query('BEGIN');
 
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const orderRes = await pool.query(
-    'INSERT INTO orders (user_id, total_amount) VALUES ($1,$2) RETURNING id AS orderId, total_amount, status',
-    [userId, total]
-  );
-  const order = orderRes.rows[0];
+    // 2) Lock cart rows to prevent concurrent modifications during checkout
+    //    We read the minimal fields needed to compute totals and create order items
+    const { rows: items } = await client.query(
+      `
+      SELECT ci.product_id, ci.quantity, p.price
+      FROM cart_items ci
+      JOIN products p ON p.id = ci.product_id
+      WHERE ci.cart_id = $1
+      FOR UPDATE
+      `,
+      [cartId]
+    );
 
-  await Promise.all(items.map(i =>
-    pool.query(
-      'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1,$2,$3,$4)',
-      [order.orderid, i.product_id, i.quantity, i.price]
-    )
-  ));
+    if (!items || items.length === 0) {
+      // Nothing to checkout; let the controller map this to 400
+      throw new Error('Cart empty');
+    }
 
-  await pool.query('DELETE FROM cart_items WHERE cart_id=$1', [cartId]);
-  return { orderId: order.orderid, totalAmount: order.total_amount, status: order.status };
+    // 3) Compute total amount
+    const total = items.reduce(
+      (sum, i) => sum + Number(i.price) * Number(i.quantity),
+      0
+    );
+
+    // 4) Create order and capture the generated id
+    //    Note: some pg configs lowercase field names; we keep a fallback
+    const { rows: orderRows } = await client.query(
+      `
+      INSERT INTO orders (user_id, total_amount)
+      VALUES ($1, $2)
+      RETURNING id AS orderId, total_amount, status
+      `,
+      [userId, total]
+    );
+    const order = orderRows[0];
+    const orderId = order.orderId ?? order.orderid ?? order.id;
+
+    // 5) Insert order items (same transaction)
+    for (const i of items) {
+      await client.query(
+        `
+        INSERT INTO order_items (order_id, product_id, quantity, price)
+        VALUES ($1, $2, $3, $4)
+        `,
+        [orderId, i.product_id, i.quantity, i.price]
+      );
+    }
+
+    // 6) Clear the cart (so it cannot be checked out twice)
+    await client.query('DELETE FROM cart_items WHERE cart_id = $1', [cartId]);
+
+    // 7) Commit transaction
+    await client.query('COMMIT');
+
+    // 8) Keep the original response shape expected by the controller
+    return {
+      orderId: orderId,
+      totalAmount: order.total_amount,
+      status: order.status,
+    };
+  } catch (err) {
+    // Rollback on any error to avoid partial orders
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateItemQuantity(cartItemId, userId, quantity) {

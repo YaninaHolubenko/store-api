@@ -11,6 +11,5 @@ exports.up = async function up(knex) {
 };
 
 exports.down = async function down(knex) {
-  // Safe rollback for fresh environments only
   await knex.schema.raw('DROP TABLE IF EXISTS orders');
 };

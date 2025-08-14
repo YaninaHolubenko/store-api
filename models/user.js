@@ -56,7 +56,7 @@ async function updateById(id, { username, email, passwordHash }) {
 }
 
 /**
- * Delete a user by ID (and cascade cleanup in DB via foreign keys or manual)
+ * Delete a user by ID 
  */
 async function deleteById(id) {
   await pool.query('DELETE FROM users WHERE id = $1', [id]);

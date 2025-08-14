@@ -21,9 +21,10 @@ async function register(req, res) {
       return res.status(400).json({ error: 'Username or email taken' });
     }
     // Hash the password
-    const passwordHash = await bcrypt.hash(password, Number(process.env.SALT_ROUNDS));
+    const passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS));
     // Create user in the database
     const newUser = await User.create({ username, email, passwordHash });
+
     // Sign JWT token
     const token = jwt.sign(
       { id: newUser.id },
@@ -37,6 +38,10 @@ async function register(req, res) {
     });
   } catch (error) {
     console.error(error);
+    // Handle race condition: unique violation despite pre-check
+    if (error && error.code === '23505') {
+      return res.status(409).json({ error: 'Username or email taken' });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 }
