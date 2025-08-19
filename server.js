@@ -9,6 +9,7 @@ const productsRouter = require('./routes/products');
 const cartRouter = require('./routes/cart');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
+const categoriesRouter = require('./routes/categories');
 const sanitizeHtml = require('sanitize-html');
 const setupSwagger = require('./swagger');
 
@@ -32,6 +33,7 @@ app.use('/', authRouter);
 app.use('/cart', cartRouter);
 app.use('/orders', ordersRouter);
 app.use('/users', usersRouter);
+app.use('/categories', categoriesRouter);
 //sanitizer
 app.use((req, res, next) => {
   const scrub = (obj) => {

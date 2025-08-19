@@ -27,19 +27,24 @@ const createProductRules = [
         .exists().withMessage('price is required')
         .bail()
         .isFloat({ gt: 0 }).withMessage('price must be a number greater than 0'),
-       
+
 
     body('stock')
         .exists().withMessage('stock is required')
         .bail()
         .isInt({ min: 0 }).withMessage('stock must be a non-negative integer'),
-        
+
 
     body('image_url')
         .optional()
         .custom(value => value === '' || /^(https?:\/\/[^\s$.?#].[^\s]*)$/.test(value))
         .withMessage('image_url must be either empty or a valid URL'),
-        
+
+    body('categoryId')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('categoryId must be a positive integer'),
+
 ];
 
 /**
@@ -81,6 +86,11 @@ const updateProductRules = [
             return /^(https?:\/\/[^\s$.?#].[^\s]*)$/.test(value);
         })
         .withMessage('image_url must be either empty or a valid URL'),
+
+    body('categoryId')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('categoryId must be a positive integer'),
 ];
 
 /**

@@ -11,27 +11,30 @@ router.use(authenticateToken);
 
 /**
  * @openapi
- * /orders:
+ * /products:
  *   get:
- *     summary: Retrieve all orders for the current user
+ *     summary: Retrieve a list of products (optionally filter by category)
  *     tags:
- *       - Orders
- *     security:
- *       - bearerAuth: []
+ *       - Products
+ *     parameters:
+ *       - in: query
+ *         name: categoryId
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Optional category ID to filter products by category
  *     responses:
  *       '200':
- *         description: A list of orders
+ *         description: An array of product objects
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 orders:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Order'
- *       '401':
- *         description: Missing or invalid token
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Product'
+ *       '400':
+ *         description: Invalid query parameter (e.g., non-positive or non-integer categoryId)
  *         content:
  *           application/json:
  *             schema:

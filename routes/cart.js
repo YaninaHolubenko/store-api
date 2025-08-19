@@ -112,12 +112,37 @@ router.get('/', cartController.getCart);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       404:
+*       404:
  *         description: Product not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Insufficient stock (requested quantity exceeds available stock)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Insufficient stock
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: integer
+ *                       example: 5
+ *                     productName:
+ *                       type: string
+ *                       example: Laptop
+ *                     requested:
+ *                       type: integer
+ *                       example: 10
+ *                     available:
+ *                       type: integer
+ *                       example: 3
  *       500:
  *         description: Server error
  *         content:
@@ -227,6 +252,31 @@ router.post(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+  *       '409':
+ *         description: Insufficient stock for one or more items (checkout aborted)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Insufficient stock
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: integer
+ *                       example: 5
+ *                     productName:
+ *                       type: string
+ *                       example: Laptop
+ *                     requested:
+ *                       type: integer
+ *                       example: 4
+ *                     available:
+ *                       type: integer
+ *                       example: 2
  *       '500':
  *         description: Server error
  *         content:

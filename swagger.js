@@ -94,10 +94,15 @@ const options = {
           properties: {
             id: { type: 'integer' },
             name: { type: 'string' },
-            description: { type: 'string' },
+            description: { type: 'string', nullable: true },
             price: { type: 'number', format: 'float' },
             stock: { type: 'integer' },
-            image_url: { type: 'string' },
+            image_url: { type: 'string', nullable: true },
+            category_id: {
+              type: 'integer',
+              nullable: true,
+              description: 'FK to categories.id (response field)'
+            },
             created_at: { type: 'string', format: 'date-time' }
           }
         },
@@ -109,7 +114,12 @@ const options = {
             description: { type: 'string' },
             price: { type: 'number', format: 'float' },
             stock: { type: 'integer' },
-            image_url: { type: 'string', maxLength: 200 }
+            image_url: { type: 'string', maxLength: 200, nullable: true },
+            categoryId: {
+              type: 'integer',
+              nullable: true,
+              description: 'Optional category id to attach (request field)'
+            }
           }
         },
         ProductUpdateInput: {
@@ -119,7 +129,26 @@ const options = {
             description: { type: 'string' },
             price: { type: 'number', format: 'float' },
             stock: { type: 'integer' },
-            image_url: { type: 'string', maxLength: 200 }
+            image_url: { type: 'string', maxLength: 200, nullable: true },
+            categoryId: {
+              type: 'integer',
+              nullable: true,
+              description: 'Optional category id to attach (request field)'
+            }
+          }
+        },
+        Category: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' }
+          }
+        },
+        CategoryInput: {
+          type: 'object',
+          required: ['name'],
+          properties: {
+            name: { type: 'string' }
           }
         },
 
