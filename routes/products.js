@@ -25,9 +25,16 @@ const validate = (req, res, next) => {
  * @openapi
  * /products:
  *   get:
- *     summary: Retrieve a list of all products
+ *     summary: Retrieve a list of products (optionally filtered by category)
  *     tags:
  *       - Products
+ *     parameters:
+ *       - in: query
+ *         name: categoryId
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: If provided, returns only products with this category id
  *     responses:
  *       '200':
  *         description: An array of product objects

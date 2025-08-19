@@ -26,13 +26,13 @@ const createProductRules = [
     body('price')
         .exists().withMessage('price is required')
         .bail()
-        .isFloat({ gt: 0 }).withMessage('price must be a number greater than 0'),
+        .isFloat({ min: 0 }).withMessage('price must be >= 0'),
 
 
     body('stock')
         .exists().withMessage('stock is required')
         .bail()
-        .isInt({ min: 0 }).withMessage('stock must be a non-negative integer'),
+        .isInt({ min: 0 }).withMessage('stock must be >= 0'),
 
 
     body('image_url')
@@ -41,9 +41,9 @@ const createProductRules = [
         .withMessage('image_url must be either empty or a valid URL'),
 
     body('categoryId')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('categoryId must be a positive integer'),
+        .optional({ nullable: true })
+        .custom((v) => v === null || (Number.isInteger(v) && v > 0))
+        .withMessage('categoryId must be a positive integer or null'),
 
 ];
 
@@ -70,11 +70,11 @@ const updateProductRules = [
 
     body('price')
         .optional()
-        .isFloat({ gt: 0 }).withMessage('price must be a number greater than 0'),
+        .isFloat({ min: 0 }).withMessage('price must be >= 0').toFloat(),
 
     body('stock')
         .optional()
-        .isInt({ min: 0 }).withMessage('stock must be a non-negative integer'),
+        .isInt({ min: 0 }).withMessage('stock must be >= 0').toInt(),
 
     body('image_url')
         .optional()                                   // skip if field is missing or exactly undefined
@@ -88,9 +88,9 @@ const updateProductRules = [
         .withMessage('image_url must be either empty or a valid URL'),
 
     body('categoryId')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('categoryId must be a positive integer'),
+        .optional({ nullable: true })
+        .custom((v) => v === null || (Number.isInteger(v) && v > 0))
+        .withMessage('categoryId must be a positive integer or null'),
 ];
 
 /**

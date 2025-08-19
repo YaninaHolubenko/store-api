@@ -26,27 +26,128 @@ async function findById(orderId, userId) {
   return { order, items: itemsRes.rows };
 }
 
-async function updateStatus(orderId, userId, status) {
+// --- admin/user helpers for permissions ---
+
+async function getMetaById(orderId) {
   const res = await pool.query(
-    'UPDATE orders SET status=$1 WHERE id=$2 AND user_id=$3 RETURNING id, total_amount, status, created_at',
-    [status, orderId, userId]
+    'SELECT id, user_id, status FROM orders WHERE id = $1',
+    [orderId]
   );
   return res.rows[0] || null;
 }
 
-async function deleteById(orderId, userId) {
-  // delete items first
-  await pool.query('DELETE FROM order_items WHERE order_id=$1', [orderId]);
+async function updateStatusAdmin(orderId, status) {
   const res = await pool.query(
-    'DELETE FROM orders WHERE id=$1 AND user_id=$2 RETURNING id',
+    `UPDATE orders
+     SET status = $2
+     WHERE id = $1
+     RETURNING id, total_amount, status, created_at`,
+    [orderId, status]
+  );
+  return res.rows[0] || null;
+}
+
+async function hardDeleteById(orderId) {
+  await pool.query('DELETE FROM order_items WHERE order_id = $1', [orderId]);
+  const del = await pool.query('DELETE FROM orders WHERE id = $1', [orderId]);
+  return del.rowCount > 0;
+}
+
+async function cancelOwnPending(orderId, userId) {
+  const res = await pool.query(
+    `UPDATE orders
+     SET status = 'cancelled'
+     WHERE id = $1
+       AND user_id = $2
+       AND status = 'pending'
+     RETURNING id, total_amount, status, created_at`,
     [orderId, userId]
   );
-  return res.rows.length>0;
+  return res.rows[0] || null;
+}
+// Admin: list all orders with owner info (optional status filter)
+async function adminFindAll(status) {
+  if (status) {
+    const res = await pool.query(
+      `SELECT o.id, o.total_amount, o.status, o.created_at,
+              u.id AS user_id, u.username, u.email
+       FROM orders o
+       JOIN users u ON u.id = o.user_id
+       WHERE o.status = $1
+       ORDER BY o.created_at DESC`,
+      [status]
+    );
+    return res.rows.map(r => ({
+      id: r.id,
+      total_amount: r.total_amount,
+      status: r.status,
+      created_at: r.created_at,
+      user: { id: r.user_id, username: r.username, email: r.email }
+    }));
+  } else {
+    const res = await pool.query(
+      `SELECT o.id, o.total_amount, o.status, o.created_at,
+              u.id AS user_id, u.username, u.email
+       FROM orders o
+       JOIN users u ON u.id = o.user_id
+       ORDER BY o.created_at DESC`
+    );
+    return res.rows.map(r => ({
+      id: r.id,
+      total_amount: r.total_amount,
+      status: r.status,
+      created_at: r.created_at,
+      user: { id: r.user_id, username: r.username, email: r.email }
+    }));
+  }
+}
+
+// Admin: get any order with items and owner info
+async function adminFindById(orderId) {
+  const orderRes = await pool.query(
+    `SELECT o.id, o.user_id, o.total_amount, o.status, o.created_at,
+            u.username, u.email
+     FROM orders o
+     JOIN users u ON u.id = o.user_id
+     WHERE o.id = $1`,
+    [orderId]
+  );
+  const order = orderRes.rows[0];
+  if (!order) return null;
+
+  const itemsRes = await pool.query(
+    `SELECT oi.id AS order_item_id, p.id AS product_id, p.name, p.description,
+            oi.quantity, oi.price
+     FROM order_items oi
+     JOIN products p ON oi.product_id = p.id
+     WHERE oi.order_id = $1`,
+    [orderId]
+  );
+
+  return {
+    order: {
+      id: order.id,
+      user_id: order.user_id,
+      total_amount: order.total_amount,
+      status: order.status,
+      created_at: order.created_at
+    },
+    items: itemsRes.rows,
+    user: {
+      id: order.user_id,
+      username: order.username,
+      email: order.email
+    }
+  };
 }
 
 module.exports = {
   findAllByUser,
   findById,
-  updateStatus,
-  deleteById,
+  updateStatusAdmin,
+  hardDeleteById,
+  cancelOwnPending,
+  getMetaById,
+  adminFindAll,
+  adminFindById,
 };

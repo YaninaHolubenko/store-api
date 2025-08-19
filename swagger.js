@@ -53,9 +53,9 @@ const options = {
         },
         LoginInput: {
           type: 'object',
-          required: ['email', 'password'],
+          required: ['username', 'password'],
           properties: {
-            email: { type: 'string', format: 'email', maxLength: 100 },
+            username: { type: 'string', maxLength: 50 },
             password: { type: 'string' }
           }
         },
@@ -112,13 +112,14 @@ const options = {
           properties: {
             name: { type: 'string', maxLength: 50 },
             description: { type: 'string' },
-            price: { type: 'number', format: 'float' },
-            stock: { type: 'integer' },
+            price: { type: 'number', format: 'float', minimum: 0, example: 0 },
+            stock: { type: 'integer', minimum: 0, example: 0 },
             image_url: { type: 'string', maxLength: 200, nullable: true },
             categoryId: {
               type: 'integer',
               nullable: true,
-              description: 'Optional category id to attach (request field)'
+              description: 'Optional category id to attach (request field)',
+              example: null
             }
           }
         },
@@ -127,13 +128,14 @@ const options = {
           properties: {
             name: { type: 'string', maxLength: 50 },
             description: { type: 'string' },
-            price: { type: 'number', format: 'float' },
-            stock: { type: 'integer' },
+            price: { type: 'number', format: 'float', minimum: 0, example: 0 },
+            stock: { type: 'integer', minimum: 0, example: 0 },
             image_url: { type: 'string', maxLength: 200, nullable: true },
             categoryId: {
               type: 'integer',
               nullable: true,
-              description: 'Optional category id to attach (request field)'
+              description: 'Optional category id to attach (request field)',
+              example: null
             }
           }
         },
