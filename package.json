@@ -29,6 +29,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "node-fetch": "^2.7.0",
     "nodemon": "^3.1.10"
   }
 }
