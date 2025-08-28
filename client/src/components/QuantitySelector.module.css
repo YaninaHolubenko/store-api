@@ -1,0 +1,25 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #222;
+  background: #fff;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input {
+  width: 70px;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}

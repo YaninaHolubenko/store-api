@@ -2,14 +2,24 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { getCategories } from '../api'; // load categories to map id -> name
+import Button from '../components/ui/Button';
+import Alert from '../components/ui/Alert';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
+// Small helper: title-case for category labels
+function toTitle(s) {
+  if (!s) return '';
+  return String(s).charAt(0).toUpperCase() + String(s).slice(1);
+}
 
 export default function ProductDetails() {
   const { id } = useParams();
   const { add } = useCart();
 
   const [product, setProduct] = useState(null);
+  const [categories, setCategories] = useState([]); // keep categories here
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
@@ -17,21 +27,41 @@ export default function ProductDetails() {
   const [qty, setQty] = useState(1); // quantity selector
 
   useEffect(() => {
-    const load = async () => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError('');
       try {
+        // Load product
         const res = await fetch(`${API_URL}/products/${id}`, { headers: { Accept: 'application/json' } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const p = data?.product || data;
-        setProduct(p);
-        setQty(1); // reset quantity when product changes
+        if (!cancelled) {
+          setProduct(p);
+          setQty(1); // reset quantity when product changes
+        }
       } catch (e) {
-        setError(e?.message || 'Failed to load product');
+        if (!cancelled) setError(e?.message || 'Failed to load product');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
+
+      // Load categories (non-blocking for product view)
+      try {
+        const catsRaw = await getCategories();
+        if (!cancelled) {
+          const list = Array.isArray(catsRaw?.categories) ? catsRaw.categories : Array.isArray(catsRaw) ? catsRaw : [];
+          setCategories(list);
+        }
+      } catch {
+        // ignore; category name fallback will still work with id
+      }
+    }
+
     load();
+    return () => { cancelled = true; };
   }, [id]);
 
   // Map technical errors to friendly messages
@@ -83,13 +113,24 @@ export default function ProductDetails() {
   const img = product.image_url || product.imageUrl || product.image || '';
   const price = typeof product.price !== 'undefined' ? Number(product.price).toFixed(2) : '';
 
-  // Derive category link (name if you synced names, otherwise falls back to id)
+  // Derive category label and link
   const categoryId = product.category_id ?? product.categoryId ?? null;
-  const categoryName = product.category ?? product.category_name ?? null;
-  const catLabel = categoryName ? (categoryName[0].toUpperCase() + categoryName.slice(1)) :
-                   (categoryId != null ? `Category #${categoryId}` : null);
-  const catHref = categoryName
-    ? `/?categoryName=${encodeURIComponent(categoryName)}`
+  const categoryNameFromProduct = product.category ?? product.category_name ?? null;
+
+  // Try to find name by id from categories list (if product doesn't carry name)
+  let resolvedCatName = categoryNameFromProduct;
+  if (!resolvedCatName && categoryId != null && categories?.length) {
+    const found = categories.find((c) => Number(c.id ?? c.category_id) === Number(categoryId));
+    const rawName = found?.display_name || found?.name || found?.slug || found?.title || null;
+    if (rawName) resolvedCatName = String(rawName);
+  }
+
+  const catLabel = resolvedCatName
+    ? toTitle(resolvedCatName)
+    : (categoryId != null ? `Category #${categoryId}` : null);
+
+  const catHref = resolvedCatName
+    ? `/?categoryName=${encodeURIComponent(resolvedCatName)}`
     : (categoryId != null ? `/?category=${Number(categoryId)}` : null);
 
   return (
@@ -98,16 +139,8 @@ export default function ProductDetails() {
         <Link to="/">← Back to products</Link>
       </div>
 
-      {error ? (
-        <div style={{ background: '#ffe6e6', color: '#a40000', padding: '8px 12px', borderRadius: 8, marginBottom: 12 }}>
-          {error}
-        </div>
-      ) : null}
-      {notice ? (
-        <div style={{ background: '#e8fff1', color: '#035e2b', padding: '8px 12px', borderRadius: 8, marginBottom: 12 }}>
-          {notice}
-        </div>
-      ) : null}
+      {error ? <Alert variant="error">{error}</Alert> : null}
+      {notice ? <Alert variant="success">{notice}</Alert> : null}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div>
@@ -162,14 +195,13 @@ export default function ProductDetails() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <button
+            <Button
               type="button"
-              disabled={adding || product.stock <= 0}
+              disabled={adding || (product.stock != null && product.stock <= 0)}
               onClick={onAddToCart}
-              style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #222', background: adding ? '#444' : '#111', color: '#fff', cursor: adding || product.stock <= 0 ? 'not-allowed' : 'pointer' }}
             >
               {adding ? 'Adding…' : 'Add to cart'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

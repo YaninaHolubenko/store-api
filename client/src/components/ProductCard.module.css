@@ -1,0 +1,54 @@
+.card {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 160px auto;
+}
+
+.imgWrap {
+  width: 100%;
+  height: 160px;
+  background: #f7f7f7;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.body {
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  grid-template-rows: auto 18px auto auto; /* keeps button aligned */
+}
+
+.name {
+  font-weight: 600;
+  min-height: 40px;
+}
+
+.category {
+  font-size: 12px;
+  opacity: 0.7;
+  height: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.price {
+  font-weight: 700;
+}
+
+.btn {
+  text-decoration: none;
+  display: inline-block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #222;
+  background: #111;
+  color: #fff;
+  text-align: center;
+}
