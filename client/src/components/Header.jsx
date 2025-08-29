@@ -71,19 +71,12 @@ export default function Header() {
             </>
           ) : (
             <>
-              <span style={{ opacity: 0.8 }}>
+              <span className={styles.muted}>
                 Hi, <strong>{user?.username || user?.email || 'user'}</strong>
               </span>
               <button
                 onClick={onLogout}
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: 8,
-                  border: '1px solid #222',
-                  background: '#111',
-                  color: '#fff',
-                  cursor: 'pointer',
-                }}
+                className={styles.logoutBtn}
               >
                 Logout
               </button>
@@ -116,19 +109,12 @@ export default function Header() {
               </>
             ) : (
               <>
-                <div style={{ opacity: 0.8 }}>
+                <div className={styles.muted}>
                   Hi, <strong>{user?.username || user?.email || 'user'}</strong>
                 </div>
                 <button
                   onClick={onLogout}
-                  style={{
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    border: '1px solid #222',
-                    background: '#111',
-                    color: '#fff',
-                    cursor: 'pointer',
-                  }}
+                  className={styles.logoutBtn}
                 >
                   Logout
                 </button>

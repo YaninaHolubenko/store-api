@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import Container from '../components/Container';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import FormInput from '../components/ui/FormInput';
+import styles from './Register.module.css';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -41,85 +43,75 @@ export default function Register() {
     }
   }
 
-  // Consistent sizing for inputs and button (44px)
-  const inputStyle = {
-    width: '100%',
-    height: 44,
-    padding: '10px 12px',
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    boxSizing: 'border-box',
-    fontSize: 16,
-    outline: 'none',
-  };
-
   return (
     <Container>
-      {/* narrow column for the form */}
-      <div style={{ maxWidth: 420, margin: '2rem auto 0', width: '100%' }}>
-        <h1 style={{ marginTop: 0, marginBottom: 12 }}>Register</h1>
+      {/* Narrow column for the form */}
+      <div className={styles.container}>
+        <h1 className={styles.title}>Register</h1>
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 
         <form onSubmit={onSubmit} noValidate>
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div className={styles.formGrid}>
             {/* Username */}
-            <label htmlFor="reg-username">
-              <div style={{ marginBottom: 4 }}>Username</div>
-              <input
-                id="reg-username"
-                name="username"
-                value={form.username}
-                onChange={onChange}
-                placeholder="Choose a username"
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                required
-                style={inputStyle}
-              />
-            </label>
+            <FormInput
+              label="Username"
+              id="reg-username"
+              name="username"
+              value={form.username}
+              onChange={onChange}
+              placeholder="Choose a username"
+              autoComplete="username"
+              blockClassName={styles.labelBlock}
+              labelClassName={styles.labelText}
+              inputClassName={styles.input}
+              inputProps={{
+                autoCapitalize: 'none',
+                autoCorrect: 'off',
+              }}
+              required
+            />
 
             {/* Email */}
-            <label htmlFor="reg-email">
-              <div style={{ marginBottom: 4 }}>Email</div>
-              <input
-                id="reg-email"
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={onChange}
-                placeholder="you@example.com"
-                autoComplete="email"
-                required
-                style={inputStyle}
-              />
-            </label>
+            <FormInput
+              label="Email"
+              id="reg-email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={onChange}
+              placeholder="you@example.com"
+              autoComplete="email"
+              blockClassName={styles.labelBlock}
+              labelClassName={styles.labelText}
+              inputClassName={styles.input}
+              required
+            />
 
             {/* Password */}
-            <label htmlFor="reg-password">
-              <div style={{ marginBottom: 4 }}>Password</div>
-              <input
-                id="reg-password"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={onChange}
-                placeholder="Create a password"
-                autoComplete="new-password"
-                required
-                style={inputStyle}
-              />
-            </label>
+            <FormInput
+              label="Password"
+              id="reg-password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={onChange}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              blockClassName={styles.labelBlock}
+              labelClassName={styles.labelText}
+              inputClassName={styles.input}
+              required
+            />
 
             {/* Submit button: full width, same height as inputs */}
-            <Button type="submit" disabled={loading} style={{ width: '100%', height: 44 }}>
+            <Button type="submit" disabled={loading} className={styles.fullButton}>
               {loading ? 'Creating account…' : 'Create account'}
             </Button>
           </div>
         </form>
 
-        <div style={{ marginTop: 12 }}>
+        <div className={styles.loginRow}>
           Already have an account? <Link to="/login">Login</Link>
         </div>
       </div>

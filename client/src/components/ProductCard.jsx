@@ -1,6 +1,7 @@
 // ProductCard: compact product tile used on the home page
 import React from 'react';
 import { Link } from 'react-router-dom';
+import ImageWithFallback from './ui/ImageWithFallback';
 import styles from './ProductCard.module.css';
 
 export default function ProductCard({ product, category }) {
@@ -13,14 +14,14 @@ export default function ProductCard({ product, category }) {
   return (
     <div className={styles.card}>
       <div className={styles.imgWrap}>
-        {img ? (
-          <img
-            className={styles.img}
-            src={img}
-            alt={product.name}
-            onError={(e) => { e.currentTarget.src = 'https://placehold.co/600x400?text=No+Image'; }}
-          />
-        ) : null}
+        <ImageWithFallback
+          src={img}
+          alt={product.name}
+          className={styles.img}
+          placeholderClassName={styles.imgFallback}
+          placeholderText=""
+          fallbackSrc="https://placehold.co/600x400?text=No+Image"
+        />
       </div>
 
       <div className={styles.body}>
@@ -28,7 +29,7 @@ export default function ProductCard({ product, category }) {
 
         <div className={styles.category}>
           {category ? (
-            <Link to={category.href} style={{ textDecoration: 'none' }}>
+            <Link to={category.href} className={styles.link}>
               {category.label}
             </Link>
           ) : null}

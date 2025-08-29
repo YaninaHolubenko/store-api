@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import Container from '../components/Container';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import FormInput from '../components/ui/FormInput';
+import styles from './Login.module.css';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,12 +17,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // --- handlers ---
+  // Keep form state in sync
   function onChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  // Submit login form
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
@@ -39,75 +42,60 @@ export default function Login() {
     }
   }
 
-  // --- consistent field + button sizing ---
-  // Keep 44px height to match button and avoid iOS zoom (fontSize >= 16px)
-  const inputStyle = {
-    width: '100%',
-    height: 44,
-    padding: '10px 12px',
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    boxSizing: 'border-box',
-    fontSize: 16,
-    outline: 'none',
-  };
-
-  // --- layout ---
+  // Layout
   return (
     <Container>
-      {/* narrow column for the form */}
-      <div style={{ maxWidth: 420, margin: '2rem auto 0', width: '100%' }}>
-        <h1 style={{ marginTop: 0, marginBottom: 12 }}>Login</h1>
+      {/* Narrow column for the form */}
+      <div className={styles.container}>
+        <h1 className={styles.title}>Login</h1>
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 
         <form onSubmit={onSubmit} noValidate>
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div className={styles.formGrid}>
             {/* Username */}
-            <label htmlFor="login-username">
-              <div style={{ marginBottom: 4 }}>Username</div>
-              <input
-                id="login-username"
-                name="username"
-                value={form.username}
-                onChange={onChange}
-                placeholder="Enter username"
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                required
-                style={inputStyle}
-              />
-            </label>
+            <FormInput
+              label="Username"
+              id="login-username"
+              name="username"
+              value={form.username}
+              onChange={onChange}
+              placeholder="Enter username"
+              autoComplete="username"
+              blockClassName={styles.labelBlock}
+              labelClassName={styles.labelText}
+              inputClassName={styles.input}
+              inputProps={{
+                autoCapitalize: 'none',
+                autoCorrect: 'off',
+              }}
+              required
+            />
 
             {/* Password */}
-            <label htmlFor="login-password">
-              <div style={{ marginBottom: 4 }}>Password</div>
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={onChange}
-                placeholder="Enter password"
-                autoComplete="current-password"
-                required
-                style={inputStyle}
-              />
-            </label>
+            <FormInput
+              label="Password"
+              id="login-password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={onChange}
+              placeholder="Enter password"
+              autoComplete="current-password"
+              blockClassName={styles.labelBlock}
+              labelClassName={styles.labelText}
+              inputClassName={styles.input}
+              required
+            />
 
             {/* Submit button: full width and same height as inputs */}
-            <Button
-              type="submit"
-              disabled={loading}
-              style={{ width: '100%', height: 44 }}
-            >
+            <Button type="submit" disabled={loading} className={styles.fullButton}>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </div>
         </form>
 
-        <div style={{ marginTop: 12 }}>
+        <div className={styles.registerRow}>
           No account? <Link to="/register">Register</Link>
         </div>
       </div>

@@ -1,0 +1,11 @@
+/* Default placeholder; can be overridden by passing placeholderClassName */
+.placeholder {
+  height: 300px;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  background: #f7f7f7;
+}

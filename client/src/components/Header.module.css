@@ -59,6 +59,19 @@
   text-align: center;
 }
 
+/* Muted text used for "Hi, user" */
+.muted { opacity: 0.8; }
+
+/* Logout button (moved from inline styles) */
+.logoutBtn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #222;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
 /* Hamburger button (hidden on desktop) */
 .hamburger {
   display: none;
@@ -90,10 +103,6 @@
 
 /* Adaptive rules */
 @media (max-width: 640px) {
-  .links {
-    display: none; /* hide desktop links on mobile */
-  }
-  .hamburger {
-    display: inline-flex; /* show hamburger on mobile */
-  }
+  .links { display: none; }
+  .hamburger { display: inline-flex; }
 }

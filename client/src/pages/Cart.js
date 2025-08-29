@@ -1,40 +1,45 @@
-// Cart page: list items, allow removing, show totals
-import React from 'react';
+// Cart page: list items, allow removing, show totals (no manual refresh)
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import Container from '../components/Container';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import CartItemRow from '../components/CartItemRow';
+import { getItemKey, getQty, getUnitPrice } from '../utils/cart';
+import styles from './Cart.module.css';
 
 export default function Cart() {
-  const { items, count, total, remove, loading, error, refresh, authRequired } = useCart();
+  const { items = [], count, total, remove, loading, error, authRequired } = useCart();
 
-  if (loading) return <div style={{ padding: '1rem' }}>Loading cart…</div>;
+  const { safeCount, safeSubtotal } = useMemo(() => {
+    const computedCount = items.reduce((acc, it) => acc + getQty(it), 0);
+    const computedTotal = items.reduce((acc, it) => acc + getQty(it) * getUnitPrice(it), 0);
+    return {
+      safeCount: typeof count === 'number' ? count : computedCount,
+      safeSubtotal: typeof total === 'number' ? total : computedTotal,
+    };
+  }, [items, count, total]);
 
-  // Friendly state for unauthenticated users
+  if (loading) return <div className={styles.loading}>Loading cart…</div>;
+
   if (authRequired) {
     return (
       <Container>
-        <div style={{ marginBottom: 12 }}>
+        <div className={styles.header}>
           <Link to="/">← Back to products</Link>
         </div>
 
-        <h1 style={{ marginTop: 0 }}>Your Cart</h1>
+        <h1 className={styles.title}>Your Cart</h1>
 
         <Alert variant="warning">Please sign in to view your cart.</Alert>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <Link to="/login" style={{ textDecoration: 'none' }}>
+        <div className={styles.authActions}>
+          <Link to="/login" className={styles.link}>
             <Button as="span">Login</Button>
           </Link>
-          <Link to="/register" style={{ textDecoration: 'none' }}>
-            <Button
-              as="span"
-              style={{ background: '#fff', color: '#111', border: '1px solid #222' }}
-            >
-              Register
-            </Button>
+          <Link to="/register" className={styles.link}>
+            <Button as="span" variant="outline">Register</Button>
           </Link>
         </div>
       </Container>
@@ -43,54 +48,44 @@ export default function Cart() {
 
   return (
     <Container>
-      <div style={{ marginBottom: 12 }}>
+      <div className={styles.header}>
         <Link to="/">← Back to products</Link>
       </div>
 
-      <h1 style={{ marginTop: 0 }}>Your Cart</h1>
+      <h1 className={styles.title}>Your Cart</h1>
 
-      {error ? (
-        <Alert variant="error">
-          {error} <button onClick={refresh} style={{ marginLeft: 8 }}>Retry</button>
-        </Alert>
-      ) : null}
+      {error ? <Alert variant="error">{String(error)}</Alert> : null}
 
       {!items.length ? (
-        <div style={{ padding: '1rem 0' }}>
-          Your cart is empty.{' '}
-          <Link to="/" style={{ textDecoration: 'none' }}>
+        <div className={styles.empty}>
+          Your cart is empty.{` `}
+          <Link to="/" className={styles.link}>
             Start shopping
           </Link>
           .
         </div>
       ) : (
         <>
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div role="list" aria-label="Cart items" className={styles.list}>
             {items.map((it) => (
               <CartItemRow
-                key={it.id ?? `${it.productId}-${it.name}`}
+                key={getItemKey(it)}
                 item={it}
                 onRemove={remove}
               />
             ))}
           </div>
 
-          <div
-            style={{
-              marginTop: 20,
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: 16,
-              alignItems: 'center',
-            }}
-          >
-            <div style={{ fontSize: 16 }}>
-              Items: <strong>{count}</strong>
+          <div className={styles.totals}>
+            <div className={styles.itemsCount}>
+              Items: <strong>{safeCount}</strong>
             </div>
-            <div style={{ fontSize: 18 }}>
-              Subtotal: <strong>£{total.toFixed(2)}</strong>
+            <div className={styles.subtotal}>
+              Subtotal: <strong>£{safeSubtotal.toFixed(2)}</strong>
             </div>
-            <Button disabled>Checkout (coming soon)</Button>
+            <Button disabled aria-disabled>
+              Checkout (coming soon)
+            </Button>
           </div>
         </>
       )}
