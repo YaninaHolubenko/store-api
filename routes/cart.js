@@ -6,8 +6,18 @@ const router = express.Router();
 const { validationResult } = require('express-validator');
 const { addItem, updateItem, checkoutRules,  } = require('../validators/cart'); 
 
-// Require authentication
-router.use(authenticateToken);
+// Require authentication (allow Passport session OR JWT)
+function allowSessionOrToken(req, res, next) {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    // normalize user id for downstream code
+    if (req.user && !req.userId) {
+      req.userId = req.user.id || req.user.sub || req.user.user_id;
+    }
+    return next();
+  }
+  return authenticateToken(req, res, next);
+}
+router.use(allowSessionOrToken);
 
 /**
  * @openapi

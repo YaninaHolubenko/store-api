@@ -1,32 +1,65 @@
 // controllers/cartController.js
 const Cart = require('../models/cart');
-const pool = require('../db/index'); // DB pool (ensure this path matches your project)
+const pool = require('../db/index');
+
+/**
+ * Resolve integer local user id for both JWT and Google session.
+ * - If req.user.id is already an integer -> use it.
+ * - Else try to find by req.user.email in users table.
+ * - If not found -> 401 with clear message.
+ */
+async function resolveLocalUserId(req) {
+  const raw = req.user?.id;
+
+  // local JWT login usually sets numeric id
+  if (Number.isInteger(raw)) return raw;
+
+  // some JWTs may pass string numbers
+  if (typeof raw === 'string' && /^\d+$/.test(raw)) {
+    const n = Number(raw);
+    if (Number.isSafeInteger(n)) return n;
+  }
+
+  const email = req.user?.email;
+  if (!email) {
+    const e = new Error('No email in session');
+    e.status = 401;
+    throw e;
+  }
+
+  const r = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (!r.rows.length) {
+    const e = new Error('Account for this Google email is not linked. Please register once with the same email.');
+    e.status = 401;
+    throw e;
+  }
+  return r.rows[0].id;
+}
 
 /**
  * Retrieve or create current user's cart
  */
 async function getCart(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
     const cart = await Cart.findOrCreateByUser(userId);
     const items = await Cart.getItemsWithProductDetails(cart.id);
     res.json({ cartId: cart.id, items });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || 'Server error' });
   }
 }
 
 /**
  * Add product to cart or update quantity (route: POST /cart/items)
- * Finds/creates cart for current user; validates product & stock; upserts quantity.
  */
 async function addItem(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
     const { productId, quantity } = req.body;
 
-    // basic validation
     if (!Number.isInteger(productId) || productId <= 0) {
       return res.status(400).json({ error: 'Invalid product id' });
     }
@@ -34,11 +67,9 @@ async function addItem(req, res) {
       return res.status(400).json({ error: 'Quantity must be positive integer' });
     }
 
-    // 1) ensure cart exists for this user
     const cart = await Cart.findOrCreateByUser(userId);
     const cartId = cart.id;
 
-    // 2) check product & stock
     const productRes = await pool.query(
       'SELECT id, name, stock FROM products WHERE id = $1',
       [productId]
@@ -48,7 +79,6 @@ async function addItem(req, res) {
     }
     const product = productRes.rows[0];
 
-    // 3) existing cart item?
     const existingRes = await pool.query(
       'SELECT id, quantity FROM cart_items WHERE cart_id = $1 AND product_id = $2',
       [cartId, productId]
@@ -102,7 +132,8 @@ async function addItem(req, res) {
     }
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Server error' });
+    const status = err.status || 500;
+    return res.status(status).json({ error: err.message || 'Server error' });
   }
 }
 
@@ -119,7 +150,6 @@ async function checkout(req, res) {
 
     await client.query('BEGIN');
 
-    // 1) lock items+products
     const itemsRes = await client.query(
       `
       SELECT ci.product_id, ci.quantity, p.name, p.stock
@@ -136,7 +166,6 @@ async function checkout(req, res) {
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
-    // 2) validate stock
     for (const it of items) {
       if (it.quantity > it.stock) {
         await client.query('ROLLBACK');
@@ -152,7 +181,6 @@ async function checkout(req, res) {
       }
     }
 
-    // 3) decrement stock
     for (const it of items) {
       await client.query(
         `UPDATE products SET stock = stock - $1 WHERE id = $2`,
@@ -160,8 +188,8 @@ async function checkout(req, res) {
       );
     }
 
-    // 4) create order + calc total
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
+
     const pricesRes = await client.query(
       `
       SELECT ci.product_id, ci.quantity, p.price
@@ -185,7 +213,6 @@ async function checkout(req, res) {
     );
     const order = orderRes.rows[0];
 
-    // 5) order_items from cart snapshot
     for (const r of pricesRes.rows) {
       await client.query(
         `INSERT INTO order_items (order_id, product_id, quantity, price)
@@ -194,7 +221,6 @@ async function checkout(req, res) {
       );
     }
 
-    // 6) clear cart
     await client.query(`DELETE FROM cart_items WHERE cart_id = $1`, [cartId]);
 
     await client.query('COMMIT');
@@ -202,7 +228,7 @@ async function checkout(req, res) {
   } catch (err) {
     console.error(err);
     try { await client.query('ROLLBACK'); } catch (_) {}
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(err.status || 500).json({ error: err.message || 'Server error' });
   } finally {
     client.release();
   }
@@ -213,7 +239,7 @@ async function checkout(req, res) {
  */
 async function updateItem(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
     const cartItemId = parseInt(req.params.id, 10);
     const { quantity } = req.body;
 
@@ -228,7 +254,7 @@ async function updateItem(req, res) {
     res.json({ item });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(err.status || 500).json({ error: err.message || 'Server error' });
   }
 }
 
@@ -237,7 +263,7 @@ async function updateItem(req, res) {
  */
 async function removeItem(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
     const cartItemId = parseInt(req.params.id, 10);
     const success = await Cart.removeItem(cartItemId, userId);
     if (!success) {
@@ -246,7 +272,7 @@ async function removeItem(req, res) {
     res.json({ message: 'Cart item removed' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(err.status || 500).json({ error: err.message || 'Server error' });
   }
 }
 

@@ -1,6 +1,7 @@
 // Centralized API helper using fetch and JWT in localStorage
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const DEFAULT_CREDENTIALS = 'include'; // send session cookie (for Google OAuth)
 
 // ---- Token helpers ----
 export function getToken() {
@@ -16,11 +17,14 @@ export function clearToken() {
 // ---- Base request helpers ----
 export async function fetchJSON(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {
+    // keep headers first so caller can override if needed
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...(options.headers || {}),
     },
+    // ensure session cookie is sent; safe for JWT too
+    credentials: options.credentials || DEFAULT_CREDENTIALS,
     ...options,
   });
 
@@ -29,12 +33,10 @@ export async function fetchJSON(path, options = {}) {
   try { data = text ? JSON.parse(text) : null; } catch (_) {}
 
   if (!res.ok) {
-    // Prefer readable messages from backend
-    let msg =
+    const msg =
       (data && (data.message || data.error)) ||
       (Array.isArray(data?.errors) && data.errors[0]?.msg) || // express-validator
       `HTTP ${res.status}`;
-    // Attach status & body for friendlier handling downstream
     const err = new Error(msg);
     err.status = res.status;
     err.body = data;
@@ -49,12 +51,16 @@ export async function fetchAuth(path, options = {}) {
     ...(options.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
-  return fetchJSON(path, { ...options, headers });
+  return fetchJSON(path, {
+    ...options,
+    headers,
+    credentials: options.credentials || DEFAULT_CREDENTIALS,
+  });
 }
 
 // ---- Auth endpoints ----
 export async function login({ username, password }) {
-  // Expect backend to return { token, user? }
+  // Returns { token, user? } for local login
   const data = await fetchJSON('/login', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
@@ -89,7 +95,6 @@ const CART_ADD_PATH = process.env.REACT_APP_CART_ADD_PATH || '/cart/items';
 const CART_GET_PATH  = process.env.REACT_APP_CART_GET_PATH  || '/cart';
 
 export async function addToCart(productId, quantity = 1) {
-  // Backend expects JSON body: { productId, quantity } as positive integers
   const pid = Number(productId);
   const qty = Number(quantity);
 
@@ -100,10 +105,9 @@ export async function addToCart(productId, quantity = 1) {
     throw new Error(`Bad quantity: ${quantity}`);
   }
 
-  // Send exactly what backend contract requires
   return fetchAuth(CART_ADD_PATH, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' }, // explicit to avoid any overrides
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ productId: pid, quantity: qty }),
   });
 }
@@ -113,13 +117,11 @@ export async function getCart() {
 }
 
 export async function removeCartItem(itemId) {
-  // Typical REST: DELETE /cart/items/:id
   return fetchAuth(`${CART_ADD_PATH}/${itemId}`, { method: 'DELETE' });
 }
 
 // ---- Profile helpers ----
 function b64UrlDecode(str) {
-  // Decode base64url (JWT payload)
   let s = str.replace(/-/g, '+').replace(/_/g, '/');
   const pad = s.length % 4;
   if (pad) s += '='.repeat(4 - pad);
@@ -135,30 +137,28 @@ function decodeJwt(token) {
   }
 }
 
-// Try to fetch current user profile; fallback to GET /users/:id decoded from JWT
 export async function getCurrentUser() {
-  const candidates = ['/me', '/profile', '/users/me', '/auth/me'];
-  for (const path of candidates) {
-    try {
-      const data = await fetchAuth(path, { method: 'GET' });
-      const u = data?.user || data;
-      if (u && (u.username || u.email || u.id || u.sub)) return u;
-    } catch (_) {
-      // try next
-    }
+  // 1) Try Google OAuth session (cookie-based)
+  try {
+    const s = await fetchJSON('/auth/session', { method: 'GET' });
+    if (s?.authenticated && s.user) return s.user;
+  } catch (_) {
+    // ignore
   }
 
+  // 2) Fallback to JWT (local login)
   const token = getToken();
   if (!token) return null;
   const p = decodeJwt(token);
   const userId = p?.id ?? p?.sub ?? p?.user_id;
   if (!userId) return null;
 
+  // Try to fetch a fresh copy; if endpoint is missing, fall back to token data
   try {
     const data = await fetchAuth(`/users/${userId}`, { method: 'GET' });
-    return data?.user || data || null;
+    return data?.user || data || { id: userId, username: p?.username ?? p?.name ?? null, email: p?.email ?? null };
   } catch {
-    return null;
+    return { id: userId, username: p?.username ?? p?.name ?? null, email: p?.email ?? null };
   }
 }
 
@@ -166,7 +166,6 @@ export async function getCurrentUser() {
 const CATEGORIES_PATH = process.env.REACT_APP_CATEGORIES_PATH || '/categories';
 
 export async function getCategories() {
-  // Some APIs return { categories: [...] }, others return an array
   const data = await fetchJSON(CATEGORIES_PATH, { method: 'GET' });
   return Array.isArray(data?.categories) ? data.categories : data;
 }

@@ -11,7 +11,6 @@ const CartContext = createContext(null);
 
 // Normalize cart response from various backend shapes
 function normalizeItems(resp) {
-  // Accept shapes: {cart:{items:[]}}, {items:[]}, [] directly, or {cartItems:[]}
   const root = resp?.cart ?? resp;
   const raw = Array.isArray(root) ? root : (root?.items ?? root?.cartItems ?? []);
   if (!Array.isArray(raw)) return [];
@@ -41,7 +40,6 @@ export function CartProvider({ children }) {
     setError('');
     setLoading(true);
 
-    // Friendly handling for unauthenticated users
     if (!isAuth) {
       setItems([]);
       setAuthRequired(true);
@@ -55,15 +53,13 @@ export function CartProvider({ children }) {
       setItems(normalizeItems(data));
       setAuthRequired(false);
     } catch (e) {
-      // If 401 or no cart yet — show empty silently but with a friendly message
       setItems([]);
-      if (e?.status === 401) {
+      if (e?.status === 401 || e?.status === 403) {
         setAuthRequired(true);
         setError('Please sign in to view your cart.');
       } else {
         setAuthRequired(false);
-        const msg = String(e?.message || 'Failed to load cart');
-        setError(msg);
+        setError(String(e?.message || 'Failed to load cart'));
       }
     } finally {
       setLoading(false);
@@ -71,7 +67,6 @@ export function CartProvider({ children }) {
   }
 
   async function add(productId, quantity = 1) {
-    // Guard on client to avoid cryptic backend errors
     if (!isAuth) {
       const err = new Error('Please sign in to add items to your cart.');
       err.status = 401;
@@ -91,13 +86,11 @@ export function CartProvider({ children }) {
     await refresh();
   }
 
-  // Load cart on first mount
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Refresh cart whenever auth state changes (login/logout)
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
