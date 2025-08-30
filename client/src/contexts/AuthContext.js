@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     (async () => {
-      // 1) Try server session (OAuth)
+      // 1) Try server session (OAuth or Local via Passport)
       const ok = await loadSessionUser();
       if (ok) return;
 
@@ -84,13 +84,24 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function setAuthFromLoginResponse(resp) {
+    // 0) Prefer session cookie: after login/register, server likely set a session cookie
+    //    Try to read current session user first to avoid relying on token presence.
+    const sessionOk = await loadSessionUser();
+    if (sessionOk) return;
+
+    // 1) Keep JWT for backward compatibility (transitional period)
     if (resp?.token) saveToken(resp.token);
 
+    // 2) Try to normalize user from response
     let u = resp?.user ? normalizeUser(resp.user) : null;
+
+    // 3) If no user in response, try /users/me (JWT) as a fallback
     if (!u) {
       const me = await getCurrentUser().catch(() => null);
       if (me) u = normalizeUser(me);
     }
+
+    // 4) As the last resort, decode JWT payload locally
     if (!u && resp?.token) {
       const p = decodeJwt(resp.token);
       if (p) u = normalizeUser(p);
