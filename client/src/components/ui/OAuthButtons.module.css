@@ -1,0 +1,27 @@
+.row {
+  margin-top: 12px;
+}
+
+.oauthBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform .04s ease, filter .15s ease;
+}
+
+.oauthBtn:hover { filter: brightness(1.06); }
+.oauthBtn:active { transform: translateY(1px); }
+
+.logo { display: inline-flex; width: 18px; height: 18px; }
+.logo svg { display: block; } /* removes extra inline-space for crisp rendering */
+
+.label { line-height: 1; }

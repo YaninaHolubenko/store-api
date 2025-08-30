@@ -7,6 +7,7 @@
 //   - block?: boolean (full width)
 //   - type?: 'button' | 'submit' | 'reset'
 //   - disabled?: boolean
+//   - className?: string (extra classes to append)
 //   - onClick?: () => void
 //   - children: ReactNode
 import React from 'react';
@@ -24,31 +25,48 @@ export default function Button({
   block = false,
   type = 'button',
   disabled = false,
+  className = '',
   onClick,
   children,
   ...rest
 }) {
-  const className = cx(
-    styles.btn,
+  const classes = cx(
+    styles.btn,                       // base styles (always)
     variant && styles[variant],
     size && styles[size],
-    block && styles.block
+    block && styles.block,
+    disabled && styles.disabledLink,  // for <Link> case
+    className                         // extra classes from caller
   );
 
   if (to) {
-    // Link-style button
+    const handleLinkClick = (e) => {
+      if (disabled) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      onClick?.(e);
+    };
+
     return (
-      <Link to={to} className={className} aria-disabled={disabled ? 'true' : undefined} {...rest}>
+      <Link
+        to={to}
+        role="button"
+        aria-disabled={disabled ? 'true' : undefined}
+        className={classes}
+        onClick={handleLinkClick}
+        {...rest}
+      >
         {children}
       </Link>
     );
   }
 
-  // Native button
   return (
     <button
       type={type}
-      className={className}
+      className={classes}
       disabled={disabled}
       onClick={onClick}
       {...rest}

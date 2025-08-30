@@ -7,7 +7,14 @@ import Container from '../components/Container';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import FormInput from '../components/ui/FormInput';
+import OAuthButtons from '../components/ui/OAuthButtons';
 import styles from './Register.module.css';
+
+// Tiny email validator (client-side convenience)
+function isEmail(v) {
+  // Simple RFC 5322-ish; good enough for client-side hint
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -27,12 +34,32 @@ export default function Register() {
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
+
+    // --- Client-side validation (fast feedback) ---
+    const uname = form.username.trim();
+    const email = form.email.trim();
+    const pwd = form.password;
+
+    if (uname.length < 3) {
+      setError('Username must be at least 3 characters.');
+      return;
+    }
+    if (!isEmail(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (pwd.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    // ---------------------------------------------
+
     setLoading(true);
     try {
       const resp = await apiRegister({
-        username: form.username.trim(),
-        email: form.email.trim(),
-        password: form.password,
+        username: uname,
+        email,
+        password: pwd, // hashing is handled on the server (bcrypt)
       });
       await setAuthFromLoginResponse(resp);
       navigate('/');
@@ -51,7 +78,7 @@ export default function Register() {
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 
-        <form onSubmit={onSubmit} noValidate>
+        <form onSubmit={onSubmit} noValidate aria-busy={loading ? 'true' : 'false'}>
           <div className={styles.formGrid}>
             {/* Username */}
             <FormInput
@@ -105,11 +132,20 @@ export default function Register() {
             />
 
             {/* Submit button: full width, same height as inputs */}
-            <Button type="submit" disabled={loading} className={styles.fullButton}>
+            <Button
+              type="submit"
+              disabled={loading}
+              aria-disabled={loading ? 'true' : undefined}
+              className={styles.fullButton}
+            >
               {loading ? 'Creating account…' : 'Create account'}
             </Button>
           </div>
         </form>
+
+        {/* Divider + OAuth */}
+        <div className={styles.orRow} role="separator" aria-label="Or continue with" />
+        <OAuthButtons />
 
         <div className={styles.loginRow}>
           Already have an account? <Link to="/login">Login</Link>

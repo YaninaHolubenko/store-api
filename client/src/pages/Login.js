@@ -7,7 +7,27 @@ import Container from '../components/Container';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import FormInput from '../components/ui/FormInput';
+import OAuthButtons from '../components/ui/OAuthButtons';
 import styles from './Login.module.css';
+
+// Map backend/transport errors to user-friendly messages (client-only)
+function normalizeLoginError(err) {
+  const status = err?.status;
+  const body = err?.body;
+  const rawMsg = String(body?.error || err?.message || '').toLowerCase();
+
+  // express-rate-limit
+  if (status === 429) return 'Too many login attempts. Please try again in a minute.';
+  // invalid credentials
+  if (status === 401 || status === 403) return 'Invalid username or password.';
+  // express-validator style { errors: [{ msg }] }
+  if (status === 400 && Array.isArray(body?.errors) && body.errors.length) {
+    return body.errors.map((e) => e.msg).join(', ');
+  }
+  if (/missing credentials/.test(rawMsg)) return 'Invalid username or password.';
+
+  return 'Could not sign in. Please try again.';
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -27,16 +47,27 @@ export default function Login() {
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
+
+    // Quick client-side checks (same spirit as Register)
+    const uname = form.username.trim();
+    const pwd = form.password;
+
+    if (!uname) {
+      setError('Please enter your username.');
+      return;
+    }
+    if (!pwd) {
+      setError('Please enter your password.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const resp = await apiLogin({
-        username: form.username.trim(),
-        password: form.password,
-      });
+      const resp = await apiLogin({ username: uname, password: pwd });
       await setAuthFromLoginResponse(resp);
       navigate('/');
     } catch (err) {
-      setError(err?.message || 'Login failed');
+      setError(normalizeLoginError(err));
     } finally {
       setLoading(false);
     }
@@ -65,10 +96,7 @@ export default function Login() {
               blockClassName={styles.labelBlock}
               labelClassName={styles.labelText}
               inputClassName={styles.input}
-              inputProps={{
-                autoCapitalize: 'none',
-                autoCorrect: 'off',
-              }}
+              inputProps={{ autoCapitalize: 'none', autoCorrect: 'off' }}
               required
             />
 
@@ -85,6 +113,7 @@ export default function Login() {
               blockClassName={styles.labelBlock}
               labelClassName={styles.labelText}
               inputClassName={styles.input}
+              showPasswordToggle
               required
             />
 
@@ -94,6 +123,11 @@ export default function Login() {
             </Button>
           </div>
         </form>
+
+        {/* OAuth (оставляем как было, чтобы не трогать стили) */}
+        <div className={styles.oauthRow}>
+          <OAuthButtons />
+        </div>
 
         <div className={styles.registerRow}>
           No account? <Link to="/register">Register</Link>

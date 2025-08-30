@@ -5,7 +5,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  position: relative; /* for the dropdown positioning */
+  position: relative;
 }
 
 /* Brand link */
@@ -23,7 +23,7 @@
   gap: 16px;
 }
 
-/* Desktop links container */
+/* Desktop links */
 .links {
   display: flex;
   align-items: center;
@@ -43,7 +43,7 @@
   color: #111;
 }
 
-/* Badge on the cart icon */
+/* Badge */
 .badge {
   position: absolute;
   top: -6px;
@@ -59,10 +59,10 @@
   text-align: center;
 }
 
-/* Muted text used for "Hi, user" */
+/* NEW: muted text for "Hi, user" */
 .muted { opacity: 0.8; }
 
-/* Logout button (moved from inline styles) */
+/* NEW: logout button extracted from inline styles */
 .logoutBtn {
   padding: 6px 10px;
   border-radius: 8px;
@@ -72,7 +72,7 @@
   cursor: pointer;
 }
 
-/* Hamburger button (hidden on desktop) */
+/* Hamburger (mobile) */
 .hamburger {
   display: none;
   border: 1px solid #ccc;
@@ -101,7 +101,7 @@
   z-index: 50;
 }
 
-/* Adaptive rules */
+/* Adaptive */
 @media (max-width: 640px) {
   .links { display: none; }
   .hamburger { display: inline-flex; }

@@ -4,6 +4,7 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 16px;
+  min-height: 44px;        /* consistent height */
   border-radius: 8px;
   border: 1px solid #222;
   background: #111;
@@ -11,7 +12,10 @@
   text-decoration: none;
   cursor: pointer;
   user-select: none;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .02s ease;
 }
+
+.btn:active:not(:disabled) { transform: translateY(1px); }
 
 .btn:disabled {
   opacity: 0.6;
@@ -20,8 +24,13 @@
 
 /* Variants */
 .primary { background: #111; color: #fff; border-color: #222; }
+.primary:hover:not(:disabled) { background: #000; }
+
 .outline { background: #fff; color: #111; border-color: #222; }
+.outline:hover { background: #f6f6f6; }
+
 .danger  { background: #c00; color: #fff; border-color: #900; }
+.danger:hover { background: #a80000; }
 
 /* Sizes */
 .sm { padding: 8px 12px; font-size: 0.95rem; }
@@ -29,11 +38,15 @@
 /* Block (full width) */
 .block { width: 100%; }
 
-/* Reset default <button> styles on some browsers */
-.buttonReset {
-  font: inherit;
-  background: none;
-  border: none;
-  padding: 0;
-  color: inherit;
+/* For <Link> “disabled” simulation */
+.disabledLink {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Optional: focus ring */
+.btn:focus-visible {
+  outline: 2px solid #6aa3ff;
+  outline-offset: 2px;
 }

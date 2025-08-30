@@ -74,10 +74,7 @@ export default function Header() {
               <span className={styles.muted}>
                 Hi, <strong>{user?.username || user?.email || 'user'}</strong>
               </span>
-              <button
-                onClick={onLogout}
-                className={styles.logoutBtn}
-              >
+              <button onClick={onLogout} className={styles.logoutBtn}>
                 Logout
               </button>
             </>
@@ -112,10 +109,7 @@ export default function Header() {
                 <div className={styles.muted}>
                   Hi, <strong>{user?.username || user?.email || 'user'}</strong>
                 </div>
-                <button
-                  onClick={onLogout}
-                  className={styles.logoutBtn}
-                >
+                <button onClick={onLogout} className={styles.logoutBtn}>
                   Logout
                 </button>
               </>

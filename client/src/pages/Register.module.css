@@ -41,3 +41,10 @@
 .loginRow {
   margin-top: 12px;
 }
+
+/* Horizontal divider “OR” */
+.orRow {
+  margin: 16px 0;
+  height: 1px;
+  background: #eee;
+}
