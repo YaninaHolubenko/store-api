@@ -7,10 +7,11 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import OAuthCallback from './pages/OAuthCallback';
 import Cart from './pages/Cart';
-import Header from './components/Header'; // responsive header with hamburger
+import Orders from './pages/Orders';
+import Checkout from './pages/Checkout';   // <--- add this line
+import Header from './components/Header';  // responsive header with hamburger
 
 export default function App() {
-  // Keep layout minimal; Header handles auth/cart UI and responsiveness
   return (
     <div>
       <Header />
@@ -18,6 +19,8 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />   {/* <--- add this line */}
+        <Route path="/orders" element={<Orders />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/oauth/callback" element={<OAuthCallback />} />

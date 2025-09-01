@@ -1,3 +1,4 @@
+// client/src/api.js
 // Centralized API helper using fetch and JWT in localStorage
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -16,21 +17,26 @@ export function clearToken() {
 
 // ---- Base request helpers ----
 export async function fetchJSON(path, options = {}) {
+  // Extract headers from options to avoid overwriting later
+  const { headers: optHeaders, ...rest } = options;
+
+  const mergedHeaders = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    ...(optHeaders || {}),
+  };
+
   const res = await fetch(`${API_URL}${path}`, {
-    // keep headers first so caller can override if needed
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...(options.headers || {}),
-    },
-    // ensure session cookie is sent; safe for JWT too
-    credentials: options.credentials || DEFAULT_CREDENTIALS,
-    ...options,
+    credentials: rest.credentials || DEFAULT_CREDENTIALS,
+    ...rest,
+    headers: mergedHeaders,
   });
 
   const text = await res.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (_) {}
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (_) {}
 
   if (!res.ok) {
     const msg =
@@ -47,13 +53,13 @@ export async function fetchJSON(path, options = {}) {
 
 export async function fetchAuth(path, options = {}) {
   const token = getToken();
-  const headers = {
+  const mergedAuthHeaders = {
     ...(options.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
   return fetchJSON(path, {
     ...options,
-    headers,
+    headers: mergedAuthHeaders,
     credentials: options.credentials || DEFAULT_CREDENTIALS,
   });
 }
@@ -92,7 +98,7 @@ export async function getProduct(id) {
 
 // ---- Cart endpoints ----
 const CART_ADD_PATH = process.env.REACT_APP_CART_ADD_PATH || '/cart/items';
-const CART_GET_PATH  = process.env.REACT_APP_CART_GET_PATH  || '/cart';
+const CART_GET_PATH = process.env.REACT_APP_CART_GET_PATH || '/cart';
 
 export async function addToCart(productId, quantity = 1) {
   const pid = Number(productId);
@@ -118,6 +124,19 @@ export async function getCart() {
 
 export async function removeCartItem(itemId) {
   return fetchAuth(`${CART_ADD_PATH}/${itemId}`, { method: 'DELETE' });
+}
+
+export async function updateCartItem(itemId, quantity) {
+  const qty = Number(quantity);
+  if (!Number.isInteger(qty) || qty <= 0) {
+    throw new Error(`Bad quantity: ${quantity}`);
+  }
+
+  return fetchAuth(`${CART_ADD_PATH}/${itemId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quantity: qty }),
+  });
 }
 
 // ---- Profile helpers ----
@@ -156,7 +175,9 @@ export async function getCurrentUser() {
   // Try to fetch a fresh copy; if endpoint is missing, fall back to token data
   try {
     const data = await fetchAuth(`/users/${userId}`, { method: 'GET' });
-    return data?.user || data || { id: userId, username: p?.username ?? p?.name ?? null, email: p?.email ?? null };
+    return (
+      data?.user || data || { id: userId, username: p?.username ?? p?.name ?? null, email: p?.email ?? null }
+    );
   } catch {
     return { id: userId, username: p?.username ?? p?.name ?? null, email: p?.email ?? null };
   }

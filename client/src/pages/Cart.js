@@ -1,3 +1,4 @@
+// client/src/pages/Cart.jsx
 // Cart page: list items, allow removing, show totals (no manual refresh)
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,7 +11,7 @@ import { getItemKey, getQty, getUnitPrice } from '../utils/cart';
 import styles from './Cart.module.css';
 
 export default function Cart() {
-  const { items = [], count, total, remove, loading, error, authRequired } = useCart();
+  const { items = [], count, total, remove, update, loading, error, authRequired } = useCart();
 
   const { safeCount, safeSubtotal } = useMemo(() => {
     const computedCount = items.reduce((acc, it) => acc + getQty(it), 0);
@@ -72,6 +73,7 @@ export default function Cart() {
                 key={getItemKey(it)}
                 item={it}
                 onRemove={remove}
+                onUpdate={update} // ✅ новый проп для изменения количества
               />
             ))}
           </div>
@@ -83,9 +85,9 @@ export default function Cart() {
             <div className={styles.subtotal}>
               Subtotal: <strong>£{safeSubtotal.toFixed(2)}</strong>
             </div>
-            <Button disabled aria-disabled>
-              Checkout (coming soon)
-            </Button>
+            <Link to="/checkout" className={styles.link}>
+              <Button as="span">Proceed to Checkout</Button>
+            </Link>
           </div>
         </>
       )}

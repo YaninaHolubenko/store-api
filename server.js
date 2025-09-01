@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const session = require('express-session');           
+const session = require('express-session');
 const passport = require('passport');
 
 const googleAuthRouter = require('./routes/auth.google');
@@ -15,6 +15,7 @@ const cartRouter = require('./routes/cart');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
 const categoriesRouter = require('./routes/categories');
+const paymentsRouter = require('./routes/payments');
 const sanitizeHtml = require('sanitize-html');
 const setupSwagger = require('./swagger');
 
@@ -24,39 +25,63 @@ const setupPassportLocal = require('./config/passportLocal');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Detect environment for secure cookies
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// In production behind a proxy (Render/Heroku/Nginx), trust the first proxy
+if (IS_PROD) {
+  app.set('trust proxy', 1);
+}
+
 // --- Security & parsers ---
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true, // allow cookies for cross-origin requests
-}));
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '10kb' }));
 
 // --- Enable sessions (required for Passport sessions) ---
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev_session_secret',
-  resave: false,
-  saveUninitialized: false,
-  // cookie: { secure: true } // enable on HTTPS + trust proxy
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'dev_session_secret',
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    cookie: {
+      httpOnly: true,
+      secure: IS_PROD,
+      sameSite: IS_PROD ? 'none' : 'lax',
+      maxAge: Number(process.env.SESSION_TTL_MS || 7 * 24 * 60 * 60 * 1000),
+    },
+  })
+);
 
 // --- Passport setup ---
-setupPassportLocal(passport);   // register local strategy
+setupPassportLocal(passport);
 app.use(passport.initialize());
 app.use(passport.session());
 
 // Minimal serialization: keep slim user object in session
 passport.serializeUser((user, done) => {
-  const slim = user && typeof user === 'object'
-    ? { id: user.id || user.sub || user.user_id, username: user.username, email: user.email, role: user.role }
-    : user;
+  const slim =
+    user && typeof user === 'object'
+      ? {
+          id: user.id || user.sub || user.user_id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        }
+      : user;
   done(null, slim);
 });
 passport.deserializeUser((obj, done) => done(null, obj));
 
 // --- Auth/session routes ---
-app.use('/auth', sessionRouter);      // /auth/session, /auth/logout
-app.use('/auth', googleAuthRouter);   // /auth/google, /auth/google/callback
+app.use('/auth', sessionRouter);
+app.use('/auth', googleAuthRouter);
 
 // --- Swagger ---
 setupSwagger(app);
@@ -68,6 +93,7 @@ app.use('/cart', cartRouter);
 app.use('/orders', ordersRouter);
 app.use('/users', usersRouter);
 app.use('/categories', categoriesRouter);
+app.use('/payments', paymentsRouter);
 
 // --- Sanitizer ---
 app.use((req, res, next) => {

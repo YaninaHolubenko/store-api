@@ -1,6 +1,6 @@
 .row {
   display: grid;
-  grid-template-columns: 100px 1fr 120px 100px 120px;
+  grid-template-columns: 100px 1fr 120px 140px 140px;
   gap: 12px;
   align-items: center;
   border: 1px solid #eee;
@@ -25,12 +25,53 @@
   color: #888;
 }
 
+/* Make image/name look clickable when they are links */
+.thumbLink,
+.nameLink {
+  text-decoration: none;
+}
+.thumbLink:hover .image {
+  opacity: 0.92;
+}
+.nameLink .name {
+  color: inherit;
+}
+.nameLink:hover .name {
+  text-decoration: underline;
+}
+
 .info { }
 .name { font-weight: 600; }
 .meta { font-size: 12px; opacity: .7; }
 
 .price { }
-.qty { }
+
+/* --- Quantity controls --- */
+.qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.qty button {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  background: #fafafa;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.qty button:hover {
+  background: #f0f0f0;
+}
+.qty input {
+  width: 50px;
+  text-align: center;
+  padding: 4px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
 
 .totalAndAction {
   display: flex;
@@ -39,16 +80,23 @@
   align-items: center;
 }
 .lineTotal { font-weight: 700; }
+
 .remove {
-  padding: 6px 10px;
+  padding: 6px 14px;
   border-radius: 8px;
-  border: 1px solid #c00;
-  background: #fff0f0;
-  color: #c00;
+  border: 1px solid #dc2626; /* red-600 */
+  background: #fff;
+  color: #dc2626;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+.remove:hover {
+  background: #dc2626;
+  color: #fff;
 }
 
-/* Mobile: строка складывается в 2 колонки */
+/* Mobile: collapse to 2 columns */
 @media (max-width: 640px) {
   .row {
     grid-template-columns: 100px 1fr;

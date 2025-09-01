@@ -1,6 +1,8 @@
 // controllers/orderController.js
 const Order = require('../models/order');
 const User = require('../models/user'); // to load role when needed
+const Cart = require('../models/cart'); // <-- added for checkout after payment
+const { getStripe } = require('../config/stripe'); // <-- added to verify PaymentIntent
 
 /**
  * Get all orders for current user
@@ -154,6 +156,68 @@ async function adminGetOne(req, res) {
   }
 }
 
+/**
+ * Complete order after successful Stripe payment.
+ * - Validates PaymentIntent (status, currency, metadata)
+ * - Verifies that the PaymentIntent belongs to the current user
+ * - Converts cart -> order inside a single transactional method
+ */
+async function completeAfterPayment(req, res) {
+  try {
+    const userId = req.user?.id;
+    const { paymentIntentId } = req.body || {};
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+      return res.status(400).json({ error: 'Missing paymentIntentId' });
+    }
+
+    const stripe = getStripe();
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    // Basic validation of funds capture
+    if (!intent || intent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment is not completed' });
+    }
+    // Currency must be GBP
+    if (intent.currency !== 'gbp') {
+      return res.status(400).json({ error: 'Unsupported currency' });
+    }
+
+    // Metadata must bind the intent to our app user/cart
+    const meta = intent.metadata || {};
+    const metaUserId = Number(meta.app_user_id || 0);
+    const metaCartId = Number(meta.app_cart_id || 0);
+
+    if (!metaUserId || !metaCartId) {
+      return res.status(400).json({ error: 'Missing payment metadata' });
+    }
+    if (metaUserId !== Number(userId)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Extra safety: ensure the cart really belongs to the user
+    const owns = await Cart.userOwnsCart(metaCartId, userId);
+    if (!owns) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Convert cart into a real order (transaction inside the model)
+    const result = await Cart.checkoutCart(metaCartId, userId);
+
+    return res.status(201).json({
+      orderId: result.orderId,
+      totalAmount: result.totalAmount,
+      status: result.status,
+    });
+  } catch (err) {
+    console.error('[orders.completeAfterPayment] error:', err);
+    return res.status(500).json({ error: 'Failed to complete order' });
+  }
+}
+
 module.exports = {
   listOrders,
   getOrder,
@@ -161,4 +225,5 @@ module.exports = {
   deleteOrder,
   adminListAll,
   adminGetOne,
+  completeAfterPayment, // <-- export new action
 };

@@ -1,14 +1,13 @@
 // routes/orders.js
 const express = require('express');
-const authenticateToken = require('../middlewares/auth');
+const authHybrid = require('../middlewares/authHybrid'); // <-- use hybrid guard
 const orderController = require('../controllers/orderController');
 const { validationResult } = require('express-validator');
 const { idParamRule, updateStatusRules } = require('../validators/order');
 const checkAdmin = require('../middlewares/checkAdmin');
 const router = express.Router();
 
-
-router.use(authenticateToken);
+router.use(authHybrid); // <-- protect all /orders routes via session OR JWT
 
 /**
  * @openapi
@@ -91,17 +90,82 @@ router.get('/', orderController.listOrders);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+router.get(
+  '/:id',
+  idParamRule,
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  orderController.getOrder
+);
 
-router.get('/:id',
-    idParamRule,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    },
-    orderController.getOrder);
+/**
+ * @openapi
+ * /orders/complete:
+ *   post:
+ *     summary: Convert the current user's cart into an order after successful Stripe payment
+ *     description: Validates Stripe PaymentIntent and creates an order from the user's cart.
+ *     tags:
+ *       - Orders
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               paymentIntentId:
+ *                 type: string
+ *             required:
+ *               - paymentIntentId
+ *           example:
+ *             paymentIntentId: "pi_3S2abcDeF..."
+ *     responses:
+ *       '201':
+ *         description: Order created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 orderId:
+ *                   type: integer
+ *                 totalAmount:
+ *                   type: number
+ *                 status:
+ *                   type: string
+ *       '400':
+ *         description: Invalid request or payment not completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '401':
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '403':
+ *         description: Forbidden
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/complete', express.json(), orderController.completeAfterPayment);
 
 /**
  * @openapi
@@ -176,8 +240,8 @@ router.get('/:id',
  */
 router.patch(
   '/:id',
-  idParamRule,            // validate path id
-  updateStatusRules,      // validate body.status
+  idParamRule,
+  updateStatusRules,
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -188,7 +252,6 @@ router.patch(
   checkAdmin,             // <-- only admin can change status
   orderController.updateStatus
 );
-
 
 /**
  * @openapi
@@ -251,7 +314,7 @@ router.delete(
     }
     next();
   },
-  orderController.deleteOrder // контроллер проверит роль/владение/статус
+  orderController.deleteOrder // controller checks role/ownership/status
 );
 
 // --- Admin: list all orders ---

@@ -38,28 +38,25 @@ async function register(req, res, next) {
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email, role: newUser.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '2h' } // was '1h'
     );
 
     // If Passport is mounted, create a server-side session immediately
     if (typeof req.login === 'function') {
       req.login(safeUser, (err) => {
         if (err) {
-          // Defer to global error handler, but still avoid leaking internals
           if (next) return next(err);
           return res.status(500).json({ error: 'Server error' });
         }
-        // Successful auto-login: return user + token
         return res.status(201).json({ user: safeUser, token });
       });
-      return; // prevent double-send
+      return;
     }
 
-    // Fallback (if passport not mounted): return user + token without session
+    // Fallback (if passport not mounted)
     return res.status(201).json({ user: safeUser, token });
   } catch (error) {
     console.error(error);
-    // Unique constraint race condition safeguard
     if (error && error.code === '23505') {
       return res.status(409).json({ error: 'Username or email taken' });
     }
@@ -105,7 +102,7 @@ async function login(req, res) {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '2h' } // was '1h'
     );
 
     return res.json({ token });

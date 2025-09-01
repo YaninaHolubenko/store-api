@@ -1,14 +1,14 @@
 // routes/users.js
 const express = require('express');
-const authenticateToken = require('../middlewares/auth');
+// Use hybrid auth: Passport session OR JWT (backward compatible)
+const authHybrid = require('../middlewares/authHybrid');
 const userController = require('../controllers/userController');
 const { validationResult } = require('express-validator');
 const { updateProfileRules, idParamRule } = require('../validators/user');
 const router = express.Router();
 
-
 // Protect all routes under /users
-router.use(authenticateToken);
+router.use(authHybrid);
 
 /**
  * @openapi
@@ -42,7 +42,6 @@ router.use(authenticateToken);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-
 router.get('/', userController.getProfile);
 
 /**
@@ -91,16 +90,17 @@ router.get('/', userController.getProfile);
  *               $ref: '#/components/schemas/Error'
  */
 router.get(
-    '/:id',
-    idParamRule,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    },
-    userController.getById
+  '/:id',
+  idParamRule,
+  (req, res, next) => {
+    // Validate path params
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  userController.getById
 );
 
 /**
@@ -151,18 +151,18 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-
 router.put(
-    '/',
-    updateProfileRules,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    },
-    userController.updateProfile
+  '/',
+  updateProfileRules,
+  (req, res, next) => {
+    // Validate body
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  userController.updateProfile
 );
 
 /**
@@ -210,16 +210,17 @@ router.put(
  *               $ref: '#/components/schemas/Error'
  */
 router.delete(
-    '/:id',
-    idParamRule,
-    (req, res, next) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    },
-    userController.deleteById
+  '/:id',
+  idParamRule,
+  (req, res, next) => {
+    // Validate path params
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  userController.deleteById
 );
 
 module.exports = router;
