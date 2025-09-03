@@ -8,8 +8,9 @@ import Register from './pages/Register';
 import OAuthCallback from './pages/OAuthCallback';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
-import Checkout from './pages/Checkout';   // <--- add this line
+import Checkout from './pages/Checkout';   // already present
 import Header from './components/Header';  // responsive header with hamburger
+import Profile from './pages/Profile';     // <-- add this line
 
 export default function App() {
   return (
@@ -19,8 +20,9 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />   {/* <--- add this line */}
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/profile" element={<Profile />} /> {/* <-- add this line */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/oauth/callback" element={<OAuthCallback />} />

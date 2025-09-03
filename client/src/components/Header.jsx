@@ -49,6 +49,7 @@ export default function Header() {
   }
 
   function onLogout() {
+    // Ensure server-side session logout + client cleanup
     logout();
     setOpen(false);
     navigate('/');
@@ -71,6 +72,8 @@ export default function Header() {
             </>
           ) : (
             <>
+              {/* Profile link visible for authenticated users */}
+              <Link to="/profile">Profile</Link> {/* <-- added */}
               <span className={styles.muted}>
                 Hi, <strong>{user?.username || user?.email || 'user'}</strong>
               </span>
@@ -106,6 +109,8 @@ export default function Header() {
               </>
             ) : (
               <>
+                {/* Profile link in mobile menu */}
+                <Link to="/profile" onClick={closeMenu}>Profile</Link> {/* <-- added */}
                 <div className={styles.muted}>
                   Hi, <strong>{user?.username || user?.email || 'user'}</strong>
                 </div>

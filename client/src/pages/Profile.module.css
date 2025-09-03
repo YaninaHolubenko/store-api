@@ -1,0 +1,142 @@
+/* client/src/pages/Profile.module.css */
+
+/* Page shell */
+.shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+.h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 1.25rem 0;
+}
+
+/* Shared frame so .notice and .card have the same outer width */
+.frame {
+  /* card outer width = card content width OR 760px, plus left+right padding (24px * 2) */
+  width: min(
+    calc(48px + 160px + 16px + 320px + 16px + 88px + 48px),
+    calc(760px + 48px)
+  );
+  margin: 0 auto;
+}
+
+/* Notice (banner) spans full width of the frame */
+.notice {
+  width: 100%;
+  margin: 0 0 14px 0;
+}
+
+/* Card */
+.card {
+  --label-w: 160px;   /* label column */
+  --field-w: 320px;   /* field width */
+  --actions-w: 88px;  /* actions column */
+  --gap-x: 16px;
+  --row-gap: 8px;
+  --row-pad-y: 12px;
+
+  background: #fff;
+  border: 1px solid #e9e9ec;
+  border-radius: 16px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.05);
+  padding: 24px;
+  width: min(
+    calc(48px + var(--label-w) + var(--gap-x) + var(--field-w) + var(--gap-x) + var(--actions-w)),
+    760px
+  );
+  margin: 0 auto;
+}
+
+/* Sections */
+.section {
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin: 4px 0 10px;
+}
+.hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #eceef1, transparent);
+  margin: 16px 0;
+}
+
+/* Field block (row1: label|input|actions; row2: helper) */
+.field {
+  display: grid;
+  grid-template-columns: var(--label-w) var(--field-w) var(--actions-w);
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "lab ctrl act"
+    ".   help .";
+  column-gap: var(--gap-x);
+  row-gap: var(--row-gap);
+  padding: var(--row-pad-y) 0;
+}
+
+.label {
+  grid-area: lab;
+  align-self: center;
+  font-size: .95rem;
+  font-weight: 600;
+  color: #2b2f36;
+}
+.control {
+  grid-area: ctrl;
+  width: var(--field-w);
+}
+.actions {
+  grid-area: act;
+  display: inline-flex;
+  align-items: center;   /* align to input line */
+  justify-content: flex-start;
+  gap: 8px;
+}
+.help {
+  grid-area: help;
+  font-size: 12px;
+  color: #667085;
+  line-height: 1.35;
+  width: var(--field-w);
+}
+
+/* Primary action button equals field width */
+.primaryBlock {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+/* Focus affordance */
+.field:has(input:focus-visible) {
+  outline: 2px solid #e5eefc;
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .frame {
+    width: 100%;
+  }
+  .card {
+    --label-w: 100%;
+    --field-w: 100%;
+    --actions-w: 100%;
+    width: 100%;
+    padding: 20px;
+  }
+  .field {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "lab"
+      "ctrl"
+      "help"
+      "act";
+    row-gap: 6px;
+  }
+  .control, .help { width: 100%; }
+  .actions { justify-content: flex-start; }
+}

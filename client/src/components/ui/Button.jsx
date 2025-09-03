@@ -2,7 +2,7 @@
 // - Renders <Link> when `to` prop is passed, otherwise <button>
 // - Props:
 //   - to?: string (render Link)
-//   - variant?: 'primary' | 'outline' | 'danger'
+//   - variant?: 'primary' | 'outline' | 'danger' | 'secondary'   // <-- added 'secondary'
 //   - size?: 'sm' | undefined
 //   - block?: boolean (full width)
 //   - type?: 'button' | 'submit' | 'reset'
@@ -31,12 +31,12 @@ export default function Button({
   ...rest
 }) {
   const classes = cx(
-    styles.btn,                       // base styles (always)
+    styles.btn,
     variant && styles[variant],
     size && styles[size],
     block && styles.block,
-    disabled && styles.disabledLink,  // for <Link> case
-    className                         // extra classes from caller
+    disabled && styles.disabledLink, // for <Link> case
+    className
   );
 
   if (to) {

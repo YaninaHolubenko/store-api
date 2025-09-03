@@ -32,7 +32,7 @@ async function ensureLocalUser({ email, displayName }) {
     ? 'password'
     : (cols.includes('password_hash') ? 'password_hash' : null);
 
-  // 3) Build username
+  // 3) Build username (slugify and ensure uniqueness)
   const base = (displayName || email.split('@')[0] || 'user')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -52,6 +52,7 @@ async function ensureLocalUser({ email, displayName }) {
   const placeholders = ['$1', '$2'];
 
   if (passwordCol) {
+    // Store a hashed random "placeholder" password to satisfy schema constraints
     const raw = `google:${crypto.randomBytes(24).toString('hex')}`;
     const rounds = Number(BCRYPT_SALT_ROUNDS || 10);
     const hash = await bcrypt.hash(raw, rounds);
@@ -89,11 +90,17 @@ passport.use(
   )
 );
 
-// Debug
+// Debug endpoint to list available routes in this router
 router.get('/', (req, res) => {
   res.json({
     ok: true,
-    routes: ['GET /auth', 'GET /auth/session', 'POST /auth/logout', 'GET /auth/google', 'GET /auth/google/callback'],
+    routes: [
+      'GET /auth',
+      'GET /auth/session',
+      // logout is handled centrally in routes/session.js
+      'GET /auth/google',
+      'GET /auth/google/callback'
+    ],
   });
 });
 
@@ -105,6 +112,7 @@ router.get(
   '/google/callback',
   passport.authenticate('google', { failureRedirect: `${CLIENT_URL}/login`, session: true }),
   (req, res) => {
+    // If the client expects JSON (e.g., XHR), return JSON; otherwise redirect to the app
     if (req.headers.accept?.includes('application/json')) {
       return res.json({ ok: true, user: req.user });
     }
@@ -117,14 +125,6 @@ router.get('/session', (req, res) => {
   res.json({ authenticated: !!req.user, user: req.user || null });
 });
 
-// Logout
-router.post('/logout', (req, res) => {
-  req.logout(() => {
-    req.session.destroy(() => {
-      res.clearCookie('connect.sid');
-      res.json({ ok: true });
-    });
-  });
-});
+// NOTE: No logout here. Use POST /auth/logout defined in routes/session.js
 
 module.exports = router;

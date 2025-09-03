@@ -1,5 +1,5 @@
-// Labeled input with consistent structure and classes passed from the page
-import React, { useState } from 'react';
+// Labeled input with consistent structure, states, and optional right slot (eye icon etc.)
+import React, { useId, useState } from 'react';
 
 export default function FormInput({
   label,
@@ -8,45 +8,123 @@ export default function FormInput({
   type = 'text',
   value,
   onChange,
+  onBlur,
+  onFocus,
   placeholder,
   autoComplete,
   required = false,
+
+  // visual / layout props
   blockClassName,
   labelClassName,
   inputClassName,
   inputProps = {},
-  showPasswordToggle = true, // enables the eye for password inputs
+  style,
+
+  // states
+  disabled = false,
+  error = '',            // string | boolean
+  helperText = '',       // string under the input (shown even without error, e.g. hint)
+
+  // password toggle
+  showPasswordToggle = true,
+
+  // custom right content (overrides built-in toggle if provided)
+  rightSlot = null,
 }) {
+  const reactId = useId();
+  const inputId = id || `${name || 'input'}-${reactId}`;
+
+  // normalize error text and flags
+  const hasError = Boolean(error);
+  const errorText = typeof error === 'string' ? error : '';
+
+  // password reveal
   const [reveal, setReveal] = useState(false);
-  const canToggle = showPasswordToggle && type === 'password';
+  const canToggle = showPasswordToggle && type === 'password' && !rightSlot;
   const inputType = canToggle && reveal ? 'text' : type;
 
+  // a11y ids
+  const helperId = `${inputId}-helper`;
+  const errorId = `${inputId}-error`;
+
+  // base inline styles (can be overridden by class names)
+  const baseInputStyle = {
+    width: '100%',
+    height: 36,
+    padding: canToggle || rightSlot ? '0 44px 0 10px' : '0 10px',
+    boxSizing: 'border-box',
+    borderRadius: 8,
+    border: `1px solid ${hasError ? '#d92d20' : '#cfcfcf'}`,
+    outline: 'none',
+    background: disabled ? '#f7f7f7' : '#fff',
+    color: disabled ? '#9b9b9b' : '#111',
+  };
+
+  const baseLabelStyle = {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 6,
+    fontWeight: 600,
+  };
+
+  const helperStyle = {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 1.35,
+    color: hasError ? '#d92d20' : '#6b7280',
+  };
+
   return (
-    <label htmlFor={id} className={blockClassName}>
-      {label ? <div className={labelClassName}>{label}</div> : null}
+    <label htmlFor={inputId} className={blockClassName} style={{ display: 'block', ...style }}>
+      {label ? <div className={labelClassName} style={baseLabelStyle}>{label}</div> : null}
 
       <div style={{ position: 'relative', width: '100%' }}>
         <input
-          id={id}
+          id={inputId}
           name={name}
           type={inputType}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
+          onFocus={onFocus}
           placeholder={placeholder}
           autoComplete={autoComplete}
           required={required}
+          disabled={disabled}
           className={inputClassName}
-          // add right padding only when the toggle is present
-          style={canToggle ? { paddingRight: 44, boxSizing: 'border-box' } : undefined}
+          aria-invalid={hasError ? 'true' : 'false'}
+          aria-describedby={
+            hasError ? errorId : (helperText ? helperId : undefined)
+          }
+          style={baseInputStyle}
           {...inputProps}
         />
 
-        {canToggle && (
+        {/* Right-side content: custom slot > password toggle > nothing */}
+        {rightSlot ? (
+          <div
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 32,
+              pointerEvents: disabled ? 'none' : 'auto',
+            }}
+          >
+            {rightSlot}
+          </div>
+        ) : canToggle ? (
           <button
             type="button"
             onClick={() => setReveal((v) => !v)}
             aria-label={reveal ? 'Hide password' : 'Show password'}
             aria-pressed={reveal ? 'true' : 'false'}
+            disabled={disabled}
             style={{
               position: 'absolute',
               right: 8,
@@ -60,7 +138,8 @@ export default function FormInput({
               background: 'transparent',
               border: '1px solid transparent',
               borderRadius: 6,
-              cursor: 'pointer',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              color: '#111',
             }}
           >
             {reveal ? (
@@ -75,8 +154,18 @@ export default function FormInput({
               </svg>
             )}
           </button>
-        )}
+        ) : null}
       </div>
+
+      {(helperText || hasError) && (
+        <div
+          id={hasError ? errorId : helperId}
+          role={hasError ? 'alert' : undefined}
+          style={helperStyle}
+        >
+          {hasError ? errorText : helperText}
+        </div>
+      )}
     </label>
   );
 }

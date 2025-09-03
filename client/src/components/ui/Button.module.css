@@ -4,7 +4,7 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 16px;
-  min-height: 44px;        /* consistent height */
+  min-height: 44px;
   border-radius: 8px;
   border: 1px solid #222;
   background: #111;
@@ -12,7 +12,7 @@
   text-decoration: none;
   cursor: pointer;
   user-select: none;
-  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .02s ease;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .02s ease, box-shadow .15s ease;
 }
 
 .btn:active:not(:disabled) { transform: translateY(1px); }
@@ -27,13 +27,25 @@
 .primary:hover:not(:disabled) { background: #000; }
 
 .outline { background: #fff; color: #111; border-color: #222; }
-.outline:hover { background: #f6f6f6; }
+.outline:hover:not(:disabled) { background: #f6f6f6; }
+
+/* NEW: secondary — subtle, for neutral actions like "Cancel" */
+.secondary {
+  background: #ffffff;
+  color: #344054;
+  border-color: #d0d5dd;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.secondary:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #cdd3da;
+}
 
 .danger  { background: #c00; color: #fff; border-color: #900; }
-.danger:hover { background: #a80000; }
+.danger:hover:not(:disabled) { background: #a80000; }
 
 /* Sizes */
-.sm { padding: 8px 12px; font-size: 0.95rem; }
+.sm { padding: 8px 12px; font-size: 0.95rem; min-height: 36px; }
 
 /* Block (full width) */
 .block { width: 100%; }
@@ -45,7 +57,7 @@
   cursor: not-allowed;
 }
 
-/* Optional: focus ring */
+/* Focus ring */
 .btn:focus-visible {
   outline: 2px solid #6aa3ff;
   outline-offset: 2px;
