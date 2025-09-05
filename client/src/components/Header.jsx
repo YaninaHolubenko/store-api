@@ -65,6 +65,7 @@ export default function Header() {
         {/* Desktop links */}
         <div className={styles.links}>
           <CartIconLink />
+
           {!isAuth ? (
             <>
               <Link to="/login">Login</Link>
@@ -72,8 +73,10 @@ export default function Header() {
             </>
           ) : (
             <>
+              {/* Orders visible for authenticated users */}
+              <Link to="/orders">Orders</Link>
               {/* Profile link visible for authenticated users */}
-              <Link to="/profile">Profile</Link> {/* <-- added */}
+              <Link to="/profile">Profile</Link>
               <span className={styles.muted}>
                 Hi, <strong>{user?.username || user?.email || 'user'}</strong>
               </span>
@@ -109,8 +112,10 @@ export default function Header() {
               </>
             ) : (
               <>
-                {/* Profile link in mobile menu */}
-                <Link to="/profile" onClick={closeMenu}>Profile</Link> {/* <-- added */}
+                {/* Orders in mobile menu */}
+                <Link to="/orders" onClick={closeMenu}>Orders</Link>
+                {/* Profile in mobile menu */}
+                <Link to="/profile" onClick={closeMenu}>Profile</Link>
                 <div className={styles.muted}>
                   Hi, <strong>{user?.username || user?.email || 'user'}</strong>
                 </div>

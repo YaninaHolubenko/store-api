@@ -11,25 +11,41 @@ import styles from './Checkout.module.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
+// Build auth headers from stored JWT
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
-  const { items = [], total, count, authRequired, loading, error } = useCart();
+  const { items = [], total, count, authRequired, loading, error, refresh, clear } = useCart();
 
   // Finalize order after Stripe confirmation
   async function handlePaid(paymentIntent) {
     try {
       const res = await fetch(`${API_URL}/orders/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+        },
         body: JSON.stringify({ paymentIntentId: paymentIntent?.id }),
       });
+
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         const msg = data?.error || `Failed to complete order (HTTP ${res.status})`;
         window.alert(msg); // eslint-disable-line no-alert
         return;
       }
+
+      // Immediately clear local cart to avoid showing old items
+      clear();
+      // Then reconcile with server (ensures badge/total are consistent)
+      await refresh();
+
       navigate('/orders', { replace: true });
     } catch (e) {
       window.alert(e?.message || 'Failed to complete order'); // eslint-disable-line no-alert
@@ -87,7 +103,7 @@ export default function Checkout() {
         <div className={styles.grid}>
           <OrderSummary items={items} total={total} count={count} />
           <div className={styles.paymentCol}>
-            <PaymentSection onPaid={handlePaid} />
+            <PaymentSection onPaid={handlePaid} authHeaders={authHeaders} />
           </div>
         </div>
       )}

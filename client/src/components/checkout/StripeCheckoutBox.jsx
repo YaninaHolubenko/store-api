@@ -56,15 +56,13 @@ function PaymentForm({ onSuccess }) {
   );
 }
 
-export default function StripeCheckoutBox({ onSuccess }) {
+export default function StripeCheckoutBox({ onSuccess, authHeaders }) {
   const navigate = useNavigate();
   const [clientSecret, setClientSecret] = useState(null);
   const [err, setErr] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const stripePromise = useMemo(() => {
-    return STRIPE_PK ? loadStripe(STRIPE_PK) : null;
-  }, []);
+  const stripePromise = useMemo(() => (STRIPE_PK ? loadStripe(STRIPE_PK) : null), []);
 
   useEffect(() => {
     let active = true;
@@ -73,17 +71,23 @@ export default function StripeCheckoutBox({ onSuccess }) {
       setLoading(true);
       setErr(null);
       try {
-        const token = getToken();
+        // Build Authorization header using the function from parent (preferred).
+        // Fallback to getToken() for backward compatibility.
+        const bearerFromFn = typeof authHeaders === 'function' ? authHeaders() : {};
+        const token = getToken?.();
+        const bearerFromToken = token ? { Authorization: `Bearer ${token}` } : {};
+
         const res = await fetch(`${API_URL}/payments/create-intent`, {
           method: 'POST',
           credentials: 'include',
           headers: {
             Accept: 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...bearerFromToken,
+            ...bearerFromFn,
           },
         });
 
-        if (res.status === 401) {
+        if (res.status === 401 || res.status === 403) {
           if (active) {
             navigate('/login', { replace: true, state: { from: '/checkout' } });
           }
@@ -124,7 +128,7 @@ export default function StripeCheckoutBox({ onSuccess }) {
     return () => {
       active = false;
     };
-  }, [navigate]);
+  }, [navigate, authHeaders]);
 
   if (!STRIPE_PK) {
     return <small className={styles.hint}>Payment is unavailable: missing publishable key.</small>;
@@ -140,13 +144,7 @@ export default function StripeCheckoutBox({ onSuccess }) {
   }
 
   return (
-    <Elements
-      stripe={stripePromise}
-      options={{
-        clientSecret,
-        appearance: { theme: 'stripe' },
-      }}
-    >
+    <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
       <PaymentForm onSuccess={onSuccess} />
     </Elements>
   );

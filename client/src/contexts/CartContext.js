@@ -20,11 +20,11 @@ function normalizeItems(resp) {
   return raw.map((it) => {
     const product = it.product || it.product_info || null;
 
-    // ✅ учитываем разные возможные ключи ID карточки корзины
+    // Handle various cart item id keys
     const idRaw =
       it.id ??
       it.item_id ??
-      it.cart_item_id ??     // <-- главное исправление
+      it.cart_item_id ??     // important variant
       it.cartItemId ??
       null;
 
@@ -103,6 +103,14 @@ export function CartProvider({ children }) {
     }
   }
 
+  // Clear cart locally (used right after successful checkout)
+  function clear() {
+    // Immediately clear local state for correct UI (badge/count/total)
+    setItems([]);
+    setError('');
+    setAuthRequired(false);
+  }
+
   // Add product to cart
   async function add(productId, quantity = 1) {
     if (!isAuth) {
@@ -151,7 +159,7 @@ export function CartProvider({ children }) {
     );
 
     try {
-      // передаём число; apiUpdateCartItem завернёт его в { quantity: q }
+      // apiUpdateCartItem should post { quantity: q }
       await apiUpdateCartItem(itemId, q);
     } catch (e) {
       setItems(prev); // rollback on failure
@@ -180,6 +188,7 @@ export function CartProvider({ children }) {
     error,
     authRequired,
     refresh,
+    clear,     // <-- exposed
     add,
     remove,
     update,

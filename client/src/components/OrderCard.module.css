@@ -1,7 +1,10 @@
 /* client/src/components/OrderCard.module.css */
+/* Card container: horizontal layout on desktop */
 .card {
-  /* Use container width constraints from parent; keep card lightweight */
-  display: block;
+  display: flex;                /* put left and right side-by-side */
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 12px 16px;
   margin: 12px 0;
   background: #ffffff;
@@ -9,21 +12,54 @@
   border-radius: 12px;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
+/* Left block: thumbnail + main text */
 .left {
-  min-width: 220px;
+  display: flex;                /* thumbnail + text inline */
+  align-items: center;
+  gap: 12px;
+  min-width: 0;                 /* prevent text overflow */
 }
 
-.id {
+/* Thumbnail (first order item) */
+.thumb {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #f3f4f6, #e5e7eb);
+}
+
+/* Text area on the left */
+.main {
+  min-width: 0;
+}
+
+.title {
   font-weight: 600;
   margin-bottom: 6px;
+}
+
+.subtitle {
+  font-weight: 400;
+  opacity: 0.85;
+  margin-left: 6px;
 }
 
 .meta {
@@ -39,9 +75,15 @@
   padding: 2px 8px;
   border-radius: 9999px;
   background: #f3f4f6; /* gray-100 */
-  color: #1f2937; /* gray-800 */
+  color: #1f2937;      /* gray-800 */
   font-size: 0.8rem;
   text-transform: capitalize;
+}
+
+.badgePending {
+  composes: badge;
+  background: #fef3c7; /* amber-100 */
+  color: #92400e;      /* amber-800 */
 }
 
 .separator {
@@ -50,38 +92,46 @@
   background: #e5e7eb; /* gray-200 */
 }
 
+.date { white-space: nowrap; }
+
+/* Right block: align Total in a fixed-width column */
 .right {
-  display: flex;
+  margin-left: auto;           /* push actions to the far right */
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: minmax(140px, 160px) auto auto; /* fixed space for Total */
   align-items: center;
   gap: 12px;
 }
 
-.total {
-  font-weight: 600;
+.amount {
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;           /* align numbers neatly in one column */
 }
 
+.amountLabel {
+  font-weight: 500;
+  margin-right: 4px;
+  color: #4b5563; /* gray-600 */
+}
+
+/* Links and buttons */
 .link {
   text-decoration: none;
   color: #2563eb; /* blue-600 */
+  white-space: nowrap;         /* avoid wrapping that shifts layout */
 }
 
 .link:hover {
   text-decoration: underline;
 }
 
-/* client/src/components/OrderCard.module.css */
-
-.badgePending {
-  composes: badge;
-  background: #fef3c7; /* amber-100 */
-  color: #92400e;      /* amber-800 */
-}
-
-/* cancel button */
+/* Cancel button */
 .cancel {
-  background: #fee2e2; /* red-100 */
-  color: #b91c1c;      /* red-700 */
-  border: 1px solid #fecaca; /* red-200 */
+  background: #fee2e2;          /* red-100 */
+  color: #b91c1c;               /* red-700 */
+  border: 1px solid #fecaca;    /* red-200 */
   border-radius: 8px;
   padding: 4px 10px;
   font-size: 0.85rem;
@@ -90,5 +140,27 @@
 }
 
 .cancel:hover {
-  background: #fecaca; /* red-200 */
+  background: #fecaca;          /* red-200 */
+}
+
+/* Responsive: stack actions on small screens */
+@media (max-width: 640px) {
+  .card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .right {
+    margin-left: 0;
+    grid-template-columns: 1fr;  /* single column on mobile */
+    grid-auto-flow: row;
+    gap: 8px;
+  }
+  .amount { text-align: left; }
+  .thumb {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 10px;
+  }
 }
