@@ -94,7 +94,7 @@
 
 .date { white-space: nowrap; }
 
-/* Right block: align Total in a fixed-width column */
+/* Right block: align Total in a fixed-width column (desktop) */
 .right {
   margin-left: auto;           /* push actions to the far right */
   display: grid;
@@ -143,24 +143,61 @@
   background: #fecaca;          /* red-200 */
 }
 
-/* Responsive: stack actions on small screens */
+/* =========================
+   Responsive (≤ 640px)
+   ========================= */
 @media (max-width: 640px) {
   .card {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: stretch; /* full width children */
+    gap: 10px;
+    padding: 14px;
   }
-  .right {
-    margin-left: 0;
-    grid-template-columns: 1fr;  /* single column on mobile */
-    grid-auto-flow: row;
-    gap: 8px;
+
+  .left {
+    width: 100%;
+    align-items: center;
+    gap: 10px;
   }
-  .amount { text-align: left; }
+
   .thumb {
     width: 48px;
     height: 48px;
     flex: 0 0 48px;
     border-radius: 10px;
+  }
+
+  .title { margin-bottom: 4px; }
+  .meta {
+    gap: 6px;
+    flex-wrap: wrap; /* let date wrap under status on small widths */
+  }
+
+  /* Stack right block into a single column: Total → link → Cancel */
+  .right {
+    width: 100%;
+    margin-left: 0;
+    grid-template-columns: 1fr;  /* single column on mobile */
+    grid-auto-flow: row;
+    gap: 8px;
+  }
+
+  .amount {
+    text-align: left;           /* align totals with text */
+    font-size: 1.05rem;
+  }
+
+  .link {
+    white-space: normal;        /* allow wrap if needed */
+    margin-top: 2px;
+  }
+
+  /* Make cancel button full-width at the bottom */
+  .cancel {
+    width: 100%;
+    text-align: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-top: 2px;
   }
 }

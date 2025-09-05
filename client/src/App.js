@@ -11,6 +11,7 @@ import Orders from './pages/Orders';
 import Checkout from './pages/Checkout';   // already present
 import Header from './components/Header';  // responsive header with hamburger
 import Profile from './pages/Profile';     // <-- add this line
+import OrderDetails from './pages/OrderDetails'; // NEW: order details page
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/:id" element={<OrderDetails />} /> {/* NEW */}
         <Route path="/profile" element={<Profile />} /> {/* <-- add this line */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
