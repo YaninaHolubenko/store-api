@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
+const path = require('path');
 
 const googleAuthRouter = require('./routes/auth.google');
 const sessionRouter = require('./routes/session');
@@ -34,24 +35,35 @@ if (IS_PROD) {
 }
 
 // --- Security & parsers ---
-app.use(helmet());
+// Allow embedding static assets (images) cross-origin (e.g., API on :3000, front on :5173)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true,
   })
 );
+
 app.use(express.json({ limit: '10kb' }));
 
 // --- Sanitize incoming data early (before routes) ---
+// Skip sanitizing for specific keys where raw strings must be preserved.
+const SANITIZE_SKIP_KEYS = new Set(['image_url']);
+
 app.use((req, res, next) => {
-  // Recursively sanitize string fields in objects
   const scrub = (obj) => {
     if (!obj || typeof obj !== 'object') return;
     for (const k of Object.keys(obj)) {
       const val = obj[k];
       if (typeof val === 'string') {
-        obj[k] = sanitizeHtml(val, { allowedTags: [], allowedAttributes: {} });
+        obj[k] = SANITIZE_SKIP_KEYS.has(k)
+          ? val
+          : sanitizeHtml(val, { allowedTags: [], allowedAttributes: {} });
       } else if (val && typeof val === 'object') {
         scrub(val);
       }
@@ -59,8 +71,20 @@ app.use((req, res, next) => {
   };
   scrub(req.body);
   scrub(req.params);
+  scrub(req.query);
   next();
 });
+
+// --- Serve static assets (optional, used for site-relative image URLs) ---
+const STATIC_DIR = process.env.STATIC_DIR || path.join(__dirname, 'public');
+app.use(
+  '/static',
+  express.static(STATIC_DIR, {
+    maxAge: IS_PROD ? '1d' : 0,
+    etag: true,
+    immutable: IS_PROD,
+  })
+);
 
 // --- Enable sessions (required for Passport sessions) ---
 app.use(

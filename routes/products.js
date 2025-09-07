@@ -4,9 +4,8 @@ const { validationResult } = require('express-validator');
 const router = express.Router();
 const productController = require('../controllers/productController');
 
-// Auth & role guards (project uses CommonJS + these paths)
-const authenticateToken = require('../middlewares/auth');      // verifies JWT, sets req.user.id
-const checkAdmin = require('../middlewares/checkAdmin');       // ensures req.user.role === 'admin'
+const authHybrid = require('../middlewares/authHybrid');
+const checkAdmin = require('../middlewares/checkAdmin');
 
 const {
   createProductRules,
@@ -115,33 +114,17 @@ router.get('/:id', idParamRule, validate, productController.getOne);
  *               $ref: '#/components/schemas/Product'
  *       '400':
  *         description: Invalid input
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '401':
  *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '403':
  *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '500':
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 // POST /products - admin only
 router.post(
   '/',
-  authenticateToken,
+  authHybrid,          // <— заменили authenticateToken на гибридный гард
   checkAdmin,
   createProductRules,
   validate,
@@ -173,45 +156,21 @@ router.post(
  *     responses:
  *       '200':
  *         description: Product updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
  *       '400':
  *         description: Invalid input
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '401':
  *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '403':
  *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '500':
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 // PUT /products/:id - admin only
 router.put(
   '/:id',
-  authenticateToken,
+  authHybrid,          // <— гибридный гард
   checkAdmin,
   [...idParamRule, ...updateProductRules],
   validate,
@@ -239,40 +198,19 @@ router.put(
  *         description: Product deleted successfully
  *       '401':
  *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '403':
  *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '409':
  *         description: Conflict (product is referenced by carts or orders)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '500':
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-
 // DELETE /products/:id - admin only
 router.delete(
   '/:id',
-  authenticateToken,
+  authHybrid,          // <— гибридный гард
   checkAdmin,
   idParamRule,
   validate,

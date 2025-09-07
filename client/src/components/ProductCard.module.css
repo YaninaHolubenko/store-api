@@ -1,4 +1,4 @@
-/* card layout kept as-is; only add .imgFallback */
+/* card layout kept as-is; cleaned duplicates */
 .card {
   border: 1px solid #eee;
   border-radius: 10px;
@@ -16,17 +16,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/* Placeholder used when no src provided */
-.imgFallback {
-  width: 100%;
-  height: 100%;
-  background: #f7f7f7;        /* match previous look */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #777;                 /* text hidden (we pass placeholderText="") */
 }
 
 /* Body */
@@ -63,27 +52,6 @@
   background: #111;
   color: #fff;
   text-align: center;
-}
-
-/* Placeholder used when no src provided (added) */
-.imgFallback {
-  width: 100%;
-  height: 100%;
-  background: #f7f7f7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #777;
-}
-/* Placeholder used when no src provided */
-.imgFallback {
-  width: 100%;
-  height: 100%;
-  background: #f7f7f7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #777;
 }
 
 .link {

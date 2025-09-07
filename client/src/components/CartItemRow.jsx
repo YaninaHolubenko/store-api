@@ -1,40 +1,96 @@
 // client/src/components/CartItemRow.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import ImageWithFallback from './ui/ImageWithFallback';
+import SafeImage from './SafeImage';
 import styles from './CartItemRow.module.css';
 
+const API_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:3000';
+
+// Make image URL absolute when a relative path is provided
+function toAbsUrl(src) {
+  if (!src) return null;
+  if (/^(https?:)?\/\//i.test(src) || /^data:/i.test(src)) return src;
+  const slash = src.startsWith('/') ? '' : '/';
+  return `${API_URL}${slash}${src}`;
+}
+
 export default function CartItemRow({ item, onRemove, onUpdate }) {
-  const unitPrice = Number(item.price ?? item.unit_price ?? 0);
-  const qty = Number(item.quantity ?? item.qty ?? 1) || 1;
-  const lineTotal = Number(item.lineTotal ?? item.total ?? unitPrice * qty);
-  const pid = item.productId ?? item.product_id ?? null;
+  // Guard against accidental undefined items
+  if (!item) return null;
+
+  // Cart line id (what backend usually expects for update/remove)
+  const cartItemId =
+    item.id ??
+    item.item_id ??
+    item.cart_item_id ??
+    null;
+
+  // Product id (only for links/fallback)
+  const pid =
+    item.productId ??
+    item.product_id ??
+    item.product?.id ??
+    null;
+
+  // Prefer cart line id for updates; fallback to product id
+  const updateKey = cartItemId ?? pid ?? null;
+
+  // Money/qty with safe fallbacks
+  const unitPrice = Number(
+    item.price ??
+    item.unit_price ??
+    item.product?.price ??
+    0
+  );
+
+  const qty = Math.max(1, Number(item.quantity ?? item.qty ?? 1) || 1);
+
+  const lineTotal = Number.isFinite(Number(item.lineTotal))
+    ? Number(item.lineTotal)
+    : unitPrice * qty;
+
+  const imgSrc = toAbsUrl(
+    item.image ||
+      item.image_url ||
+      item.imageUrl ||
+      item.product?.image ||
+      item.product?.image_url ||
+      item.product?.imageUrl ||
+      ''
+  );
+
+  function clamp(val) {
+    const n = Math.max(1, Number(val) || 1);
+    const max = Number.isFinite(Number(item.stock)) ? Number(item.stock) : undefined;
+    return typeof max === 'number' ? Math.min(n, max) : n;
+  }
 
   function handleDecrement() {
-    if (qty > 1) {
-      onUpdate(item.id, qty - 1);
-    }
+    if (!onUpdate || updateKey == null) return;
+    if (qty > 1) onUpdate(updateKey, clamp(qty - 1));
   }
 
   function handleIncrement() {
-    onUpdate(item.id, qty + 1);
+    if (!onUpdate || updateKey == null) return;
+    onUpdate(updateKey, clamp(qty + 1));
   }
 
   function handleChange(e) {
+    if (!onUpdate || updateKey == null) return;
     const val = parseInt(e.target.value, 10);
-    if (!isNaN(val) && val > 0) {
-      onUpdate(item.id, val);
-    }
+    if (!Number.isNaN(val) && val > 0) onUpdate(updateKey, clamp(val));
   }
 
   const imageEl = (
-    <ImageWithFallback
-      src={item.image || ''}
+    <SafeImage
+      src={imgSrc}
       alt={item.name || 'Product'}
       className={styles.image}
-      placeholderClassName={styles.noImage}
-      placeholderText="No image"
-      fallbackSrc="https://placehold.co/200x160?text=No+Image"
+      // Neutral 200x160 fallback keeps tile height stable
+      fallbackSvg={`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
     />
   );
 
@@ -62,9 +118,7 @@ export default function CartItemRow({ item, onRemove, onUpdate }) {
         ) : (
           <div className={styles.name}>{item.name}</div>
         )}
-        <div className={styles.meta}>
-          Product ID: {pid ?? '—'}
-        </div>
+        <div className={styles.meta}>Product ID: {pid ?? '—'}</div>
       </div>
 
       <div className={styles.price}>£{unitPrice.toFixed(2)}</div>
@@ -74,7 +128,8 @@ export default function CartItemRow({ item, onRemove, onUpdate }) {
         <button
           onClick={handleDecrement}
           aria-label="Decrease quantity"
-          disabled={qty <= 1}
+          disabled={qty <= 1 || updateKey == null}
+          type="button"
         >
           –
         </button>
@@ -84,10 +139,15 @@ export default function CartItemRow({ item, onRemove, onUpdate }) {
           min={1}
           onChange={handleChange}
           aria-label="Quantity"
+          inputMode="numeric"
+          {...(Number.isFinite(Number(item.stock)) ? { max: Number(item.stock) } : {})}
+          disabled={updateKey == null}
         />
         <button
           onClick={handleIncrement}
           aria-label="Increase quantity"
+          type="button"
+          disabled={updateKey == null || (Number.isFinite(Number(item.stock)) ? qty >= Number(item.stock) : false)}
         >
           +
         </button>
@@ -95,10 +155,11 @@ export default function CartItemRow({ item, onRemove, onUpdate }) {
 
       <div className={styles.totalAndAction}>
         <div className={styles.lineTotal}>£{lineTotal.toFixed(2)}</div>
-        {item.id ? (
+        {cartItemId != null ? (
           <button
             className={styles.remove}
-            onClick={() => onRemove(item.id)}
+            onClick={() => onRemove?.(cartItemId)}
+            type="button"
           >
             Remove
           </button>

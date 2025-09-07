@@ -5,11 +5,28 @@ import { getToken, setToken as saveToken, clearToken, getCurrentUser } from '../
 const AuthContext = createContext(null);
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
+/* ---------- helpers to normalize user and role ---------- */
+function pickRole(src) {
+  // Accept multiple shapes: { role }, { is_admin }, { isAdmin }, { scope }, JWT custom claims, etc.
+  const rawRole =
+    src?.role ??
+    (src?.is_admin ? 'admin' : undefined) ??
+    (src?.isAdmin ? 'admin' : undefined) ??
+    // sometimes APIs put roles/scopes in arrays or space-separated strings
+    (Array.isArray(src?.roles) ? (src.roles.includes('admin') ? 'admin' : undefined) : undefined) ??
+    (typeof src?.scope === 'string' && src.scope.split(' ').includes('admin') ? 'admin' : undefined) ??
+    undefined;
+
+  return rawRole || 'user';
+}
+
 function normalizeUser(src) {
+  if (!src) return null;
   return {
     id: src?.id ?? src?.user_id ?? src?.sub ?? null,
     username: src?.username ?? src?.name ?? null,
     email: src?.email ?? null,
+    role: pickRole(src),
   };
 }
 
@@ -28,6 +45,7 @@ function decodeJwt(token) {
     return null;
   }
 }
+/* -------------------------------------------------------- */
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -50,7 +68,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     (async () => {
-      // 1) Try server session (OAuth or Local via Passport)
+      // 1) Try server session (OAuth / Passport local)
       const ok = await loadSessionUser();
       if (ok) return;
 
@@ -58,6 +76,7 @@ export function AuthProvider({ children }) {
       const token = getToken();
       if (!token) return;
 
+      // Try cached user first (already normalized with role)
       const saved = localStorage.getItem('user');
       if (saved) {
         try {
@@ -66,6 +85,7 @@ export function AuthProvider({ children }) {
         } catch {}
       }
 
+      // Prefer API profile
       const me = await getCurrentUser().catch(() => null);
       if (me) {
         const u = normalizeUser(me);
@@ -74,6 +94,7 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      // As a last resort decode JWT locally
       const p = decodeJwt(token);
       if (p) {
         const u = normalizeUser(p);
@@ -84,24 +105,23 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function setAuthFromLoginResponse(resp) {
-    // 0) Prefer session cookie: after login/register, server likely set a session cookie
-    //    Try to read current session user first to avoid relying on token presence.
+    // 0) Prefer session cookie: if server set it, take user from /auth/session
     const sessionOk = await loadSessionUser();
     if (sessionOk) return;
 
-    // 1) Keep JWT for backward compatibility (transitional period)
+    // 1) Keep JWT for backward compatibility
     if (resp?.token) saveToken(resp.token);
 
-    // 2) Try to normalize user from response
+    // 2) Try normalize user from response
     let u = resp?.user ? normalizeUser(resp.user) : null;
 
-    // 3) If no user in response, try /users/me (JWT) as a fallback
+    // 3) If no user in response, try /users/me (JWT)
     if (!u) {
       const me = await getCurrentUser().catch(() => null);
       if (me) u = normalizeUser(me);
     }
 
-    // 4) As the last resort, decode JWT payload locally
+    // 4) Last resort — decode JWT
     if (!u && resp?.token) {
       const p = decodeJwt(resp.token);
       if (p) u = normalizeUser(p);
@@ -125,7 +145,9 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    role: user?.role || 'user',
     isAuth: !!user,
+    isAdmin: (user?.role || 'user') === 'admin',
     setAuthFromLoginResponse,
     logout,
   };

@@ -12,13 +12,13 @@
   font-weight: 700;
   margin-bottom: 24px;
   text-align: center;
-  color: #111827; /* gray-900 */
+  color: #111827;
 }
 
 /* Status / loading messages */
 .message {
   text-align: center;
-  color: #6b7280; /* gray-500 */
+  color: #6b7280;
   font-size: 1rem;
   margin: 16px 0;
 }
@@ -26,9 +26,9 @@
 /* Error message */
 .error {
   text-align: center;
-  color: #b91c1c; /* red-700 */
-  background: #fee2e2; /* red-100 */
-  border: 1px solid #fecaca; /* red-200 */
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
   padding: 12px;
   border-radius: 8px;
   margin: 16px 0;

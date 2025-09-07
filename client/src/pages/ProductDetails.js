@@ -11,7 +11,7 @@ import { fetchJSON } from '../utils/http';
 import { normalizeProduct } from '../utils/normalize';
 import { resolveCategoryMeta } from '../utils/categories';
 import QuantitySelector from '../components/QuantitySelector';
-import ImageWithFallback from '../components/ui/ImageWithFallback';
+import SafeImage from '../components/SafeImage';
 import styles from './ProductDetails.module.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -137,8 +137,8 @@ export default function ProductDetails() {
   if (!product) return <div className={styles.notFound}>Product not found.</div>;
 
   const price = product.price != null ? `£${product.price.toFixed(2)}` : '';
-  const img = product.image;
-  const cat = resolveCategoryMeta(product, categories); // use helper
+  const img = product.image_url || product.image || '';
+  const cat = resolveCategoryMeta(product, categories);
 
   return (
     <Container>
@@ -152,12 +152,12 @@ export default function ProductDetails() {
       <div className={styles.grid}>
         {/* Image */}
         <div>
-          <ImageWithFallback
+          <SafeImage
             src={img}
             alt={product.name}
-            className={styles.image}                 // use page image style
-            placeholderClassName={styles.imageFallback} // use page placeholder style
-            // fallback src is default inside component; can be overridden if needed
+            className={styles.image}
+            loading="lazy"
+            referrerPolicy="no-referrer"
           />
         </div>
 

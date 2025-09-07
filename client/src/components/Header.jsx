@@ -40,7 +40,7 @@ function CartIconLink() {
 
 export default function Header() {
   const navigate = useNavigate();
-  const { user, isAuth, logout } = useAuth();
+  const { user, isAuth, isAdmin, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
   // Close menu after navigation action
@@ -75,11 +75,22 @@ export default function Header() {
             <>
               {/* Orders visible for authenticated users */}
               <Link to="/orders">Orders</Link>
+
+              {/* Admin link only for admins */}
+              {isAdmin && <Link to="/admin">Admin</Link>}
+
               {/* Profile link visible for authenticated users */}
               <Link to="/profile">Profile</Link>
+
+              {/* Greeting + role badge (admin only) */}
               <span className={styles.muted}>
+                {/* keep greeting simple; badge stands next to it */}
                 Hi, <strong>{user?.username || user?.email || 'user'}</strong>
               </span>
+              {isAdmin && (
+                <span className={styles.roleBadge} title="Administrator">Admin</span>
+              )}
+
               <button onClick={onLogout} className={styles.logoutBtn}>
                 Logout
               </button>
@@ -114,11 +125,23 @@ export default function Header() {
               <>
                 {/* Orders in mobile menu */}
                 <Link to="/orders" onClick={closeMenu}>Orders</Link>
+
+                {/* Admin in mobile menu (admins only) */}
+                {isAdmin && <Link to="/admin" onClick={closeMenu}>Admin</Link>}
+
                 {/* Profile in mobile menu */}
                 <Link to="/profile" onClick={closeMenu}>Profile</Link>
+
+                {/* Greeting + role badge (admin only) */}
                 <div className={styles.muted}>
                   Hi, <strong>{user?.username || user?.email || 'user'}</strong>
+                  {isAdmin && (
+                    <span className={styles.roleBadge} title="Administrator" style={{ marginLeft: 6 }}>
+                      Admin
+                    </span>
+                  )}
                 </div>
+
                 <button onClick={onLogout} className={styles.logoutBtn}>
                   Logout
                 </button>

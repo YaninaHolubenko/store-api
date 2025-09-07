@@ -1,4 +1,4 @@
-//routes/auth.js
+// routes/auth.js
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
@@ -7,6 +7,7 @@ const { registerRules, loginRules } = require('../validators/auth');
 const authController = require('../controllers/authController');
 const passport = require('passport');
 const jwt = require('jsonwebtoken'); // keep temporarily for compatibility
+const User = require('../models/user'); // <-- used to enrich session with role
 
 // Rate limiter for auth endpoints:
 // - max 20 registrations per hour per IP
@@ -158,67 +159,21 @@ router.post(
  *                 token:
  *                   type: string
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer, example: 1 }
+ *                     username: { type: string, example: johndoe }
+ *                     email: { type: string, format: email, example: johndoe@example.com }
+ *                     role: { type: string, example: admin }
  *       '400':
  *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       msg:
- *                         type: string
- *                         example: Username is required
- *                       param:
- *                         type: string
- *                         example: username
- *                       location:
- *                         type: string
- *                         example: body
  *       '401':
- *         description: Missing credentials
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Missing credentials
- *       '403':
- *         description: Invalid credentials
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Invalid username or password
+ *         description: Missing or invalid credentials
  *       '429':
  *         description: Too many login attempts
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Too many login attempts from this IP, please try again later
  *       '500':
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Internal server error
  */
 router.post(
   '/login',
@@ -244,7 +199,7 @@ router.post(
       req.logIn(user, (loginErr) => {
         if (loginErr) return next(loginErr);
 
-        // Optional: keep JWT in response for backward compatibility during migration
+        // Transitional JWT for backward compatibility
         let token = null;
         if (process.env.JWT_SECRET) {
           token = jwt.sign(
@@ -254,11 +209,85 @@ router.post(
           );
         }
 
-        // Client should rely on the session cookie; token is transitional
-        return res.json({ user, token });
+        // Return safe user payload with role (role may be 'admin' or 'user')
+        const safeUser = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role || (user.is_admin ? 'admin' : 'user'),
+        };
+
+        return res.json({ user: safeUser, token });
       });
     })(req, res, next);
   }
 );
+
+/**
+ * @openapi
+ * /auth/session:
+ *   get:
+ *     summary: Get current authenticated session (with role)
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       '200':
+ *         description: Session state
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 authenticated:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     id: { type: integer, example: 1 }
+ *                     username: { type: string, example: admin }
+ *                     email: { type: string, format: email, example: admin@example.com }
+ *                     role: { type: string, example: admin }
+ *       '500':
+ *         description: Server error
+ */
+router.get('/session', async (req, res) => {
+  try {
+    const isAuthed =
+      typeof req.isAuthenticated === 'function'
+        ? req.isAuthenticated()
+        : !!req.user;
+
+    if (!isAuthed || !req.user) {
+      return res.json({ authenticated: false, user: null });
+    }
+
+    // Try to enrich session user with role from DB (fallbacks to req.user)
+    let dbUser = null;
+    try {
+      if (User && typeof User.findByIdWithRole === 'function') {
+        dbUser = await User.findByIdWithRole(req.user.id);
+      } else if (User && typeof User.findById === 'function') {
+        dbUser = await User.findById(req.user.id);
+      }
+    } catch (_) {
+      // ignore and fallback to req.user
+    }
+
+    const u = dbUser || req.user;
+    const safe = {
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      role: u.role || (u.is_admin ? 'admin' : 'user'),
+    };
+
+    return res.json({ authenticated: true, user: safe });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;

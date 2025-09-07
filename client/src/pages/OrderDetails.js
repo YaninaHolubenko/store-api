@@ -1,7 +1,8 @@
-// client/src/pages/OrderDetails.jsx
+// client/src/pages/OrderDetails.js
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Container from '../components/Container';
+import SafeImage from '../components/SafeImage';
 import styles from './OrderDetails.module.css';
 
 const API_URL =
@@ -186,12 +187,12 @@ export default function OrderDetails() {
                 <article key={it.id || `${it.productId}-${it.name}`} className={styles.item}>
                   <div className={styles.thumb}>
                     {it.image ? (
-                      <img
+                      <SafeImage
                         src={it.image}
                         alt={it.name}
                         className={styles.thumbImg}
-                        loading="lazy"
-                        onError={(e) => { e.currentTarget.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw='; }}
+                        // Neutral inline SVG keeps layout stable when image fails
+                        fallbackSvg={`<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
                       />
                     ) : (
                       <div className={styles.thumbPlaceholder} aria-hidden="true" />

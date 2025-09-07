@@ -72,6 +72,19 @@
   cursor: pointer;
 }
 
+/* NEW: role badge (e.g., Admin) */
+.roleBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 6px;
+  border-radius: 9999px;
+  background: #111827;   /* slate-900 */
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
 /* Hamburger (mobile) */
 .hamburger {
   display: none;

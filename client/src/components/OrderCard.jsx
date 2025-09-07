@@ -1,13 +1,30 @@
 // client/src/components/OrderCard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import SafeImage from './SafeImage';
 import styles from './OrderCard.module.css';
+
+const API_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:3000';
+
+// Make image URL absolute when a relative path is provided
+function toAbsUrl(src) {
+  if (!src) return null;
+  if (/^(https?:)?\/\//i.test(src) || /^data:/i.test(src)) return src;
+  const slash = src.startsWith('/') ? '' : '/';
+  return `${API_URL}${slash}${src}`;
+}
 
 export default function OrderCard({ order, onCancel }) {
   // Prefer pre-fetched firstItem passed from Orders.js
   const firstItem = order?.firstItem || getFirstItem(order);
 
-  // Money formatting (robust)
+  // Normalize image src (support relative paths)
+  const imgSrc = toAbsUrl(firstItem?.image);
+
+  // Money formatting
   const currency = order?.currency || 'GBP';
   const amountValue = resolveAmount(order);
   const formattedAmount =
@@ -22,16 +39,13 @@ export default function OrderCard({ order, onCancel }) {
       {/* Left: thumbnail + title/meta */}
       <div className={styles.left}>
         <div className={styles.thumb}>
-          {firstItem?.image ? (
-            <img
-              src={firstItem.image}
-              alt={firstItem.title || 'Order item'}
+          {imgSrc ? (
+            <SafeImage
+              src={imgSrc}
+              alt={firstItem?.title || 'Order item'}
               className={styles.thumbImg}
-              loading="lazy"
-              onError={(e) => {
-                // fallback transparent pixel on error
-                e.currentTarget.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
-              }}
+              // keep layout stable with neutral 64x64 fallback
+              fallbackSvg={`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
             />
           ) : (
             <div className={styles.thumbPlaceholder} aria-hidden="true" />
@@ -49,7 +63,6 @@ export default function OrderCard({ order, onCancel }) {
             {order?.created_at ? (
               <span className={styles.date}>{new Date(order.created_at).toLocaleString()}</span>
             ) : null}
-            {/* removed inline total to avoid duplication */}
           </div>
         </div>
       </div>
@@ -81,7 +94,7 @@ export default function OrderCard({ order, onCancel }) {
   );
 }
 
-/** Resolve first item in case order.firstItem is not provided */
+/** Resolve first item when order.firstItem is not provided */
 function getFirstItem(order) {
   const pools = [order?.items, order?.orderItems, order?.lines, order?.products, order?.cart_items].filter(Array.isArray);
   const items = pools.length ? pools[0] : null;
@@ -93,6 +106,7 @@ function getFirstItem(order) {
     item.image ||
     item.image_url ||
     item.imageUrl ||
+    item.product?.image ||
     item.product?.image_url ||
     item.product?.imageUrl ||
     null;
@@ -100,7 +114,7 @@ function getFirstItem(order) {
   return { title, image };
 }
 
-/** Robustly resolve order total in decimal units */
+/** Resolve order total in decimal units */
 function resolveAmount(order) {
   if (Number.isFinite(order?.total_cents)) return order.total_cents / 100;
   const raw =

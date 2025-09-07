@@ -1,4 +1,3 @@
-// client/src/pages/Cart.jsx
 // Cart page: list items, allow removing, show totals (no manual refresh)
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -68,14 +67,16 @@ export default function Cart() {
       ) : (
         <>
           <div role="list" aria-label="Cart items" className={styles.list}>
-            {items.map((it) => (
-              <CartItemRow
-                key={getItemKey(it)}
-                item={it}
-                onRemove={remove}
-                onUpdate={update} // ✅ новый проп для изменения количества
-              />
-            ))}
+            {items
+              .filter(Boolean) // remove holes/undefined entries
+              .map((it) => (
+                <CartItemRow
+                  key={getItemKey(it)}
+                  item={it}
+                  onRemove={remove}
+                  onUpdate={update}
+                />
+              ))}
           </div>
 
           <div className={styles.totals}>

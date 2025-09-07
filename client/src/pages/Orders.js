@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Container from '../components/Container';
 import OrderCard from '../components/OrderCard';
+import styles from './Orders.module.css';
 
 const API_URL =
   (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
@@ -60,35 +61,32 @@ function pickFirstItem(details) {
 
 // Build auth headers from stored JWT
 function authHeaders() {
-  // NOTE: token is stored by AuthContext/login flow
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 /* ---------------------------------------- */
 
 export default function Orders() {
-  // Keep page logic minimal and delegate UI to OrderCard
   const [orders, setOrders] = useState([]);
   const [thumbs, setThumbs] = useState({}); // { [orderId]: { title, image } }
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const navigate = useNavigate();
 
-  // Load orders list and prefetch details for thumbnails
   const loadOrders = useCallback(
     async (signal) => {
       try {
         setLoading(true);
         setErr(null);
 
+        // 1) Load orders list
         const res = await fetch(`${API_URL}/orders`, {
-          credentials: 'include', // send session cookie too (hybrid auth)
-          headers: { Accept: 'application/json', ...authHeaders() }, // <-- important
+          credentials: 'include',
+          headers: { Accept: 'application/json', ...authHeaders() },
           signal,
         });
 
         if (res.status === 401 || res.status === 403) {
-          // Not authenticated/forbidden: redirect to login preserving return path
           navigate('/login', { replace: true, state: { from: '/orders' } });
           return;
         }
@@ -102,25 +100,45 @@ export default function Orders() {
         const list = Array.isArray(data) ? data : data?.orders || [];
         setOrders(list);
 
-        // Prefetch details (to get first item thumbnail)
-        const details = await Promise.all(
-          list.map((o) =>
-            fetch(`${API_URL}/orders/${o.id}`, {
-              credentials: 'include',
-              headers: { Accept: 'application/json', ...authHeaders() }, // <-- important
-              signal,
-            })
-              .then((r) => (r.ok ? r.json() : null))
-              .catch(() => null)
-          )
-        );
+        // 2) Prefer preview fields from the list response (server-side optimization)
+        const initialThumbs = {};
+        const needFetchIds = [];
+        for (const o of list) {
+          const t = (o.preview_title ?? o.preview_image_url)
+            ? {
+                title: o.preview_title || null,
+                image: toAbsUrl(o.preview_image_url || null),
+              }
+            : null;
 
-        const map = {};
-        details.forEach((d, i) => {
-          const first = pickFirstItem(d);
-          if (first) map[list[i].id] = first;
-        });
-        setThumbs(map);
+          if (t) {
+            initialThumbs[o.id] = t;
+          } else {
+            needFetchIds.push(o.id);
+          }
+        }
+
+        // 3) If some orders lack preview, fetch their details just for the first item thumbnail
+        if (needFetchIds.length) {
+          const details = await Promise.all(
+            needFetchIds.map((id) =>
+              fetch(`${API_URL}/orders/${id}`, {
+                credentials: 'include',
+                headers: { Accept: 'application/json', ...authHeaders() },
+                signal,
+              })
+                .then((r) => (r.ok ? r.json() : null))
+                .catch(() => null)
+            )
+          );
+
+          details.forEach((d, i) => {
+            const first = pickFirstItem(d);
+            if (first) initialThumbs[needFetchIds[i]] = first;
+          });
+        }
+
+        setThumbs(initialThumbs);
       } catch (e) {
         if (e?.name !== 'AbortError') setErr(e.message || 'Failed to load orders');
       } finally {
@@ -146,7 +164,7 @@ export default function Orders() {
       const res = await fetch(`${API_URL}/orders/${order.id}`, {
         method: 'DELETE',
         credentials: 'include',
-        headers: { ...authHeaders() }, // <-- important
+        headers: { ...authHeaders() },
       });
       if (res.status === 204) {
         await loadOrders();
@@ -166,24 +184,23 @@ export default function Orders() {
 
   return (
     <Container>
-      <h1>My Orders</h1>
+      <h1 className={styles.heading}>My Orders</h1>
 
-      {loading && <p>Loading…</p>}
+      {loading && <p className={styles.message}>Loading…</p>}
 
-      {!loading && err && <p aria-live="polite">{err}</p>}
+      {!loading && err && <p className={styles.error} aria-live="polite">{err}</p>}
 
       {!loading && !err && orders.length === 0 && (
-        <p>
+        <p className={styles.message}>
           You have no orders yet. <Link to="/">Go shopping</Link>
         </p>
       )}
 
       {!loading && !err && orders.length > 0 && (
-        <div role="list" aria-label="Order list">
+        <div role="list" aria-label="Order list" className={styles.list}>
           {orders.map((o) => (
             <OrderCard
               key={o.id}
-              // pass first item (title + image) for thumbnail rendering
               order={{ ...o, firstItem: thumbs[o.id] || null }}
               onCancel={cancelOrder}
             />
