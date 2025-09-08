@@ -4,12 +4,11 @@ const authenticateToken = require('../middlewares/auth');
 const cartController = require('../controllers/cartController');
 const router = express.Router();
 const { validationResult } = require('express-validator');
-const { addItem, updateItem, checkoutRules,  } = require('../validators/cart'); 
+const { addItem, updateItem, checkoutRules } = require('../validators/cart');
 
 // Require authentication (allow Passport session OR JWT)
 function allowSessionOrToken(req, res, next) {
   if (req.isAuthenticated && req.isAuthenticated()) {
-    // normalize user id for downstream code
     if (req.user && !req.userId) {
       req.userId = req.user.id || req.user.sub || req.user.user_id;
     }
@@ -122,7 +121,7 @@ router.get('/', cartController.getCart);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
-*       404:
+ *       404:
  *         description: Product not found
  *         content:
  *           application/json:
@@ -177,7 +176,11 @@ router.post(
  * @openapi
  * /cart/{cartId}/checkout:
  *   post:
- *     summary: Convert the current user's cart into an order (fake charge)
+ *     summary: Legacy checkout (deprecated)
+ *     description: >
+ *       This endpoint is deprecated. Use the Stripe flow instead:
+ *       POST /payments/create-intent then POST /orders/complete.
+ *     deprecated: true
  *     tags:
  *       - Cart
  *     security:
@@ -188,111 +191,10 @@ router.post(
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID of the cart to checkout
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               payment:
- *                 type: object
- *                 required: [method, card]
- *                 properties:
- *                   method:
- *                     type: string
- *                     enum: [card]
- *                   card:
- *                     type: object
- *                     required: [number, expMonth, expYear, cvc, name]
- *                     properties:
- *                       number:
- *                         type: string
- *                         example: "4242424242424242"
- *                       expMonth:
- *                         type: integer
- *                         example: 12
- *                       expYear:
- *                         type: integer
- *                         example: 2030
- *                       cvc:
- *                         type: string
- *                         example: "123"
- *                       name:
- *                         type: string
- *                         example: "Jane Doe"
+ *         description: Cart ID
  *     responses:
- *       '201':
- *         description: Order created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 orderId:
- *                   type: integer
- *                 totalAmount:
- *                   type: number
- *                   format: float
- *                 status:
- *                   type: string
- *                   example: pending
- *       '400':
- *         description: Validation error or empty cart
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '402':
- *         description: Payment declined
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Cart not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
-  *       '409':
- *         description: Insufficient stock for one or more items (checkout aborted)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Insufficient stock
- *                 details:
- *                   type: object
- *                   properties:
- *                     productId:
- *                       type: integer
- *                       example: 5
- *                     productName:
- *                       type: string
- *                       example: Laptop
- *                     requested:
- *                       type: integer
- *                       example: 4
- *                     available:
- *                       type: integer
- *                       example: 2
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       410:
+ *         description: This endpoint is no longer supported
  */
 router.post(
   '/:cartId/checkout',
@@ -336,7 +238,7 @@ router.post(
  *             required:
  *               - quantity
  *     responses:
- *       '200':
+ *       200:
  *         description: Cart item quantity updated successfully
  *         content:
  *           application/json:
@@ -352,32 +254,31 @@ router.post(
  *                       type: integer
  *                     quantity:
  *                       type: integer
- *       '400':
+ *       400:
  *         description: Invalid quantity
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '401':
+ *       401:
  *         description: Missing or invalid token
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '404':
+ *       404:
  *         description: Cart item not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '500':
+ *       500:
  *         description: Server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-
 router.patch(
   '/items/:id',
   updateItem,
@@ -390,7 +291,6 @@ router.patch(
   },
   cartController.updateItem
 );
-
 
 /**
  * @openapi
@@ -409,21 +309,21 @@ router.patch(
  *           type: integer
  *         description: ID of the cart item to remove
  *     responses:
- *       '200':
+ *       200:
  *         description: Cart item removed successfully
- *       '401':
+ *       401:
  *         description: Missing or invalid token
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '404':
+ *       404:
  *         description: Cart item not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '500':
+ *       500:
  *         description: Server error
  *         content:
  *           application/json:
