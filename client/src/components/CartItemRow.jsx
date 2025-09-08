@@ -4,19 +4,6 @@ import { Link } from 'react-router-dom';
 import SafeImage from './SafeImage';
 import styles from './CartItemRow.module.css';
 
-const API_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
-  process.env.REACT_APP_API_URL ||
-  'http://localhost:3000';
-
-// Make image URL absolute when a relative path is provided
-function toAbsUrl(src) {
-  if (!src) return null;
-  if (/^(https?:)?\/\//i.test(src) || /^data:/i.test(src)) return src;
-  const slash = src.startsWith('/') ? '' : '/';
-  return `${API_URL}${slash}${src}`;
-}
-
 export default function CartItemRow({ item, onRemove, onUpdate }) {
   // Guard against accidental undefined items
   if (!item) return null;
@@ -52,15 +39,15 @@ export default function CartItemRow({ item, onRemove, onUpdate }) {
     ? Number(item.lineTotal)
     : unitPrice * qty;
 
-  const imgSrc = toAbsUrl(
+  // Prefer product-linked fields; SafeImage will resolve relative URLs
+  const rawSrc =
     item.image ||
-      item.image_url ||
-      item.imageUrl ||
-      item.product?.image ||
-      item.product?.image_url ||
-      item.product?.imageUrl ||
-      ''
-  );
+    item.image_url ||
+    item.imageUrl ||
+    item.product?.image ||
+    item.product?.image_url ||
+    item.product?.imageUrl ||
+    '';
 
   function clamp(val) {
     const n = Math.max(1, Number(val) || 1);
@@ -84,14 +71,17 @@ export default function CartItemRow({ item, onRemove, onUpdate }) {
     if (!Number.isNaN(val) && val > 0) onUpdate(updateKey, clamp(val));
   }
 
-  const imageEl = (
+  const imageEl = rawSrc ? (
     <SafeImage
-      src={imgSrc}
+      src={rawSrc}
       alt={item.name || 'Product'}
       className={styles.image}
       // Neutral 200x160 fallback keeps tile height stable
-      fallbackSvg={`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
+      fallback={`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
+      loading="lazy"
     />
+  ) : (
+    <div className={styles.image} aria-hidden="true" />
   );
 
   return (

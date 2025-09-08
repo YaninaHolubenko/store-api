@@ -1,7 +1,9 @@
+//client/src/pages/admin/AdminOrderDetails.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import Container from '../../components/Container';
 import { useAuth } from '../../contexts/AuthContext';
+import SafeImage from '../../components/SafeImage';
 import styles from './AdminOrderDetails.module.css';
 
 const API_URL =
@@ -14,14 +16,6 @@ const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled'];
 function formatMoney(v, currency = 'GBP') {
   const num = typeof v === 'number' ? v : Number(v || 0);
   return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(num);
-}
-
-// Делает абсолютный URL для относительных путей изображений
-function toAbsUrl(src) {
-  if (!src) return null;
-  if (/^(https?:)?\/\//i.test(src) || /^data:/i.test(src)) return src;
-  const slash = src.startsWith('/') ? '' : '/';
-  return `${API_URL}${slash}${src}`;
 }
 
 export default function AdminOrderDetails() {
@@ -155,19 +149,18 @@ export default function AdminOrderDetails() {
           <div className={styles.items}>
             {items.map((it) => {
               const line = Number(it.price) * Number(it.quantity || 1);
-              const imgSrc = toAbsUrl(
-                it.image_url || it.product_image_url || it.image || it.thumbnail
-              );
+              // Prefer product image fields; SafeImage will resolve relative URLs
+              const rawSrc = it.image_url || it.product_image_url || it.image || it.thumbnail;
+
               return (
                 <div key={it.order_item_id || `${it.product_id}-${it.name}`} className={styles.item}>
                   <div className={styles.thumb}>
-                    {imgSrc ? (
-                      <img
-                        src={imgSrc}
+                    {rawSrc ? (
+                      <SafeImage
+                        src={rawSrc}
                         alt={it.name || `Product #${it.product_id}`}
                         className={styles.thumbImg}
                         loading="lazy"
-                        onError={(e) => { e.currentTarget.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw='; }}
                       />
                     ) : (
                       <div className={styles.thumbPlaceholder} aria-hidden="true" />

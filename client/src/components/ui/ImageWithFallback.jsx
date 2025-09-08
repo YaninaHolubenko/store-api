@@ -1,6 +1,10 @@
-// Generic image with a built-in fallback and optional placeholder
-// Usage: <ImageWithFallback src={url} alt="..." className={...} placeholderClassName={...} />
+// client/src/components/ui/ImageWithFallback.jsx
+// Thin wrapper around SafeImage to keep backward compatibility with existing props.
+// - Uses SafeImage for actual image rendering and fallback handling.
+// - Preserves placeholder UI when `src` is missing.
+
 import React from 'react';
+import SafeImage from '../SafeImage';
 import styles from './ImageWithFallback.module.css';
 
 export default function ImageWithFallback({
@@ -21,19 +25,14 @@ export default function ImageWithFallback({
     );
   }
 
-  // If the primary image fails, swap to fallback (prevent loops by checking current src)
-  const onError = (e) => {
-    if (e.currentTarget && e.currentTarget.src !== fallbackSrc) {
-      e.currentTarget.src = fallbackSrc;
-    }
-  };
-
+  // Delegate to SafeImage; it will resolve absolute URL and handle fallback swapping
   return (
-    <img
+    <SafeImage
       src={src}
       alt={alt}
       className={className}
-      onError={onError}
+      fallbackSrc={fallbackSrc}
+      loading="lazy"
       {...imgProps}
     />
   );

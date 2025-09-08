@@ -11,14 +11,6 @@ const API_URL =
   'http://localhost:3000';
 
 /* -------- helpers (module scope) -------- */
-// Resolve absolute URL for images (supports relative paths)
-function toAbsUrl(src) {
-  if (!src) return null;
-  if (/^(https?:)?\/\//i.test(src) || /^data:/i.test(src)) return src;
-  const slash = src.startsWith('/') ? '' : '/';
-  return `${API_URL}${slash}${src}`;
-}
-
 // Extract first item (title + image) from order details payload
 function pickFirstItem(details) {
   const arr =
@@ -55,7 +47,8 @@ function pickFirstItem(details) {
 
   return {
     title: title || null,
-    image: toAbsUrl(imageRaw),
+    // Pass raw value; SafeImage will resolve relative URLs later
+    image: imageRaw || null,
   };
 }
 
@@ -107,7 +100,8 @@ export default function Orders() {
           const t = (o.preview_title ?? o.preview_image_url)
             ? {
                 title: o.preview_title || null,
-                image: toAbsUrl(o.preview_image_url || null),
+                // Keep raw value; SafeImage in OrderCard will resolve it
+                image: o.preview_image_url || null,
               }
             : null;
 

@@ -11,16 +11,13 @@ const API_URL =
   'http://localhost:3000';
 
 /* ---------- helpers ---------- */
+// Build auth headers from stored JWT
 function authHeaders() {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
-function toAbsUrl(src) {
-  if (!src) return null;
-  if (/^(https?:)?\/\//i.test(src) || /^data:/i.test(src)) return src;
-  const slash = src.startsWith('/') ? '' : '/';
-  return `${API_URL}${slash}${src}`;
-}
+
+// Resolve order total in decimal units
 function resolveAmount(order) {
   if (Number.isFinite(order?.total_cents)) return order.total_cents / 100;
   const raw = order?.total_amount ?? order?.total ?? null;
@@ -28,10 +25,13 @@ function resolveAmount(order) {
   const num = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(',', '.'));
   return Number.isFinite(num) ? num : null;
 }
+
 function formatMoney(value, currency = 'GBP') {
   if (value == null) return '—';
   return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value);
 }
+
+// Normalize items: keep raw image path; SafeImage will resolve absolute URL
 function normalizeItems(items, currency = 'GBP') {
   const arr = Array.isArray(items) ? items : [];
   return arr.map((it) => {
@@ -51,7 +51,7 @@ function normalizeItems(items, currency = 'GBP') {
       id: it.order_item_id || it.id,
       productId,
       name,
-      image: toAbsUrl(img),
+      image: img || null,
       quantity: qty,
       price,
       lineTotal: price * qty,
@@ -192,7 +192,8 @@ export default function OrderDetails() {
                         alt={it.name}
                         className={styles.thumbImg}
                         // Neutral inline SVG keeps layout stable when image fails
-                        fallbackSvg={`<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
+                        fallback={`<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
+                        loading="lazy"
                       />
                     ) : (
                       <div className={styles.thumbPlaceholder} aria-hidden="true" />

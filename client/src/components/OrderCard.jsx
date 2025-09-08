@@ -4,25 +4,9 @@ import { Link } from 'react-router-dom';
 import SafeImage from './SafeImage';
 import styles from './OrderCard.module.css';
 
-const API_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
-  process.env.REACT_APP_API_URL ||
-  'http://localhost:3000';
-
-// Make image URL absolute when a relative path is provided
-function toAbsUrl(src) {
-  if (!src) return null;
-  if (/^(https?:)?\/\//i.test(src) || /^data:/i.test(src)) return src;
-  const slash = src.startsWith('/') ? '' : '/';
-  return `${API_URL}${slash}${src}`;
-}
-
 export default function OrderCard({ order, onCancel }) {
   // Prefer pre-fetched firstItem passed from Orders.js
   const firstItem = order?.firstItem || getFirstItem(order);
-
-  // Normalize image src (support relative paths)
-  const imgSrc = toAbsUrl(firstItem?.image);
 
   // Money formatting
   const currency = order?.currency || 'GBP';
@@ -39,13 +23,13 @@ export default function OrderCard({ order, onCancel }) {
       {/* Left: thumbnail + title/meta */}
       <div className={styles.left}>
         <div className={styles.thumb}>
-          {imgSrc ? (
+          {firstItem?.image ? (
             <SafeImage
-              src={imgSrc}
+              src={firstItem.image}
               alt={firstItem?.title || 'Order item'}
               className={styles.thumbImg}
               // keep layout stable with neutral 64x64 fallback
-              fallbackSvg={`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
+              fallback={`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="%23f3f4f6"/></svg>`}
             />
           ) : (
             <div className={styles.thumbPlaceholder} aria-hidden="true" />
