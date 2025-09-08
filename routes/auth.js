@@ -30,30 +30,15 @@ const loginLimiter = rateLimit({
  *     summary: Register a new user
  *     tags:
  *       - Auth
+ *     security: []   # public
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *                 example: johndoe
- *               email:
- *                 type: string
- *                 format: email
- *                 example: johndoe@example.com
- *               password:
- *                 type: string
- *                 format: password
- *                 example: StrongPass123!
- *             required:
- *               - username
- *               - email
- *               - password
+ *             $ref: '#/components/schemas/RegisterInput'
  *     responses:
- *       '201':
+ *       201:
  *         description: User registered successfully
  *         content:
  *           application/json:
@@ -63,47 +48,16 @@ const loginLimiter = rateLimit({
  *                 message:
  *                   type: string
  *                   example: User registered successfully
- *       '400':
- *         description: Validation error or username/email taken
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       msg:
- *                         type: string
- *                         example: Email is invalid
- *                       param:
- *                         type: string
- *                         example: email
- *                       location:
- *                         type: string
- *                         example: body
- *       '429':
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       429:
  *         description: Too many registration attempts
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Too many registration attempts from this IP, please try again later
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Internal server error
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // Register route (kept as controller; we will add auto-login later as a separate tiny step)
 router.post(
@@ -131,25 +85,15 @@ router.post(
  *     summary: Authenticate user and return JWT token
  *     tags:
  *       - Auth
+ *     security: []   # public
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *                 example: johndoe
- *               password:
- *                 type: string
- *                 format: password
- *                 example: StrongPass123!
- *             required:
- *               - username
- *               - password
+ *             $ref: '#/components/schemas/LoginInput'
  *     responses:
- *       '200':
+ *       200:
  *         description: Token issued successfully
  *         content:
  *           application/json:
@@ -162,18 +106,31 @@ router.post(
  *                 user:
  *                   type: object
  *                   properties:
- *                     id: { type: integer, example: 1 }
- *                     username: { type: string, example: johndoe }
- *                     email: { type: string, format: email, example: johndoe@example.com }
- *                     role: { type: string, example: admin }
- *       '400':
- *         description: Validation error
- *       '401':
- *         description: Missing or invalid credentials
- *       '429':
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     username:
+ *                       type: string
+ *                       example: johndoe
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                       example: johndoe@example.com
+ *                     role:
+ *                       type: string
+ *                       example: admin
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       429:
  *         description: Too many login attempts
- *       '500':
- *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post(
   '/login',
@@ -230,8 +187,9 @@ router.post(
  *     summary: Get current authenticated session (with role)
  *     tags:
  *       - Auth
+ *     security: []   # public: returns { authenticated: false } if not logged in
  *     responses:
- *       '200':
+ *       200:
  *         description: Session state
  *         content:
  *           application/json:
@@ -245,12 +203,21 @@ router.post(
  *                   type: object
  *                   nullable: true
  *                   properties:
- *                     id: { type: integer, example: 1 }
- *                     username: { type: string, example: admin }
- *                     email: { type: string, format: email, example: admin@example.com }
- *                     role: { type: string, example: admin }
- *       '500':
- *         description: Server error
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     username:
+ *                       type: string
+ *                       example: admin
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                       example: admin@example.com
+ *                     role:
+ *                       type: string
+ *                       example: admin
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/session', async (req, res) => {
   try {

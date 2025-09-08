@@ -59,6 +59,31 @@ router.get('/session', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /auth/logout:
+ *   post:
+ *     summary: Logout and destroy the current session
+ *     description: |
+ *       Logs out the user from the active Passport session and destroys the server-side session.
+ *       If no session exists, returns `{ ok: true }` as well (idempotent).
+ *     tags:
+ *       - Auth
+ *     security: []  # public; will simply return ok even if not logged in
+ *     responses:
+ *       200:
+ *         description: Session destroyed (or no-op if not logged in)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 // Logout and destroy session
 router.post('/logout', (req, res, next) => {
   // Passport >=0.6 requires a callback

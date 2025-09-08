@@ -11,7 +11,11 @@ const router = express.Router();
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, BCRYPT_SALT_ROUNDS } = process.env;
 
-// Create/find local user by Google profile; adapt to schema (password/password_hash/none)
+/**
+ * Create or find a local user by Google profile.
+ * Stores a random hashed password if schema requires password/password_hash column.
+ * This keeps the users table consistent without exposing any real password.
+ */
 async function ensureLocalUser({ email, displayName }) {
   if (!email) {
     const err = new Error('Google account did not provide an email');
@@ -90,7 +94,29 @@ passport.use(
   )
 );
 
-// Debug endpoint to list available routes in this router
+/**
+ * @openapi
+ * /auth:
+ *   get:
+ *     summary: List available auth routes (debug)
+ *     tags:
+ *       - Auth
+ *     security: []   # public
+ *     responses:
+ *       200:
+ *         description: Routes listing
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 routes:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
 router.get('/', (req, res) => {
   res.json({
     ok: true,
@@ -104,10 +130,58 @@ router.get('/', (req, res) => {
   });
 });
 
-// Start OAuth
+/**
+ * @openapi
+ * /auth/google:
+ *   get:
+ *     summary: Start Google OAuth2 flow
+ *     description: Redirects the user to Google for authentication (profile, email scopes).
+ *     tags:
+ *       - Auth
+ *     security: []   # public
+ *     responses:
+ *       302:
+ *         description: Redirect to Google consent screen
+ */
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], session: true }));
 
-// Callback
+/**
+ * @openapi
+ * /auth/google/callback:
+ *   get:
+ *     summary: Google OAuth2 callback
+ *     description: |
+ *       Handles the callback from Google. On success:
+ *       - If the client expects JSON (XHR), returns `{ ok: true, user }`.
+ *       - Otherwise redirects to the client app.
+ *     tags:
+ *       - Auth
+ *     security: []   # public endpoint that sets the session
+ *     responses:
+ *       302:
+ *         description: Redirect to client app on success (non-XHR)
+ *       200:
+ *         description: JSON response on XHR requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 router.get(
   '/google/callback',
   passport.authenticate('google', { failureRedirect: `${CLIENT_URL}/login`, session: true }),
@@ -120,7 +194,36 @@ router.get(
   }
 );
 
-// Session state
+/**
+ * @openapi
+ * /auth/session:
+ *   get:
+ *     summary: Get current session state
+ *     description: Returns whether the user is authenticated via session and the user payload if present.
+ *     tags:
+ *       - Auth
+ *     security: []   # public: returns { authenticated: false } if not logged in
+ *     responses:
+ *       200:
+ *         description: Session state
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 authenticated:
+ *                   type: boolean
+ *                 user:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ */
 router.get('/session', (req, res) => {
   res.json({ authenticated: !!req.user, user: req.user || null });
 });

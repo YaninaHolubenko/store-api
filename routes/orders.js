@@ -19,7 +19,7 @@ router.use(authHybrid); // <-- protect all /orders routes via session OR JWT
  *     security:
  *       - bearerAuth: []
  *     responses:
- *       '200':
+ *       200:
  *         description: List of orders for the authenticated user
  *         content:
  *           application/json:
@@ -27,24 +27,16 @@ router.use(authHybrid); // <-- protect all /orders routes via session OR JWT
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Order'
- *       '401':
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/', orderController.listOrders);
 
 /**
  * @openapi
- * /orders/{orderId}:
+ * /orders/{id}:
  *   get:
  *     summary: Get a specific order (only if it belongs to the current user)
  *     tags:
@@ -52,43 +44,24 @@ router.get('/', orderController.listOrders);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: orderId
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the order
+ *       - $ref: '#/components/parameters/PathId'
  *     responses:
- *       '200':
+ *       200:
  *         description: Order with items
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/OrderWithItems'
- *       '401':
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (order belongs to another user)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Order not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get(
   '/:id',
@@ -127,7 +100,7 @@ router.get(
  *           example:
  *             paymentIntentId: "pi_3S2abcDeF..."
  *     responses:
- *       '201':
+ *       201:
  *         description: Order created successfully
  *         content:
  *           application/json:
@@ -140,30 +113,14 @@ router.get(
  *                   type: number
  *                 status:
  *                   type: string
- *       '400':
- *         description: Invalid request or payment not completed
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post('/complete', express.json(), orderController.completeAfterPayment);
 
@@ -177,12 +134,7 @@ router.post('/complete', express.json(), orderController.completeAfterPayment);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Order ID to update
+ *       - $ref: '#/components/parameters/PathId'
  *     requestBody:
  *       required: true
  *       content:
@@ -198,7 +150,7 @@ router.post('/complete', express.json(), orderController.completeAfterPayment);
  *           example:
  *             status: shipped
  *     responses:
- *       '200':
+ *       200:
  *         description: Order status updated successfully
  *         content:
  *           application/json:
@@ -207,36 +159,16 @@ router.post('/complete', express.json(), orderController.completeAfterPayment);
  *               properties:
  *                 order:
  *                   $ref: '#/components/schemas/Order'
- *       '400':
- *         description: Validation error (missing/invalid status or id)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Order not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
   '/:id',
@@ -264,45 +196,20 @@ router.patch(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Order ID to cancel/delete
+ *       - $ref: '#/components/parameters/PathId'
  *     responses:
- *       '204':
+ *       204:
  *         description: Order cancelled (user) or deleted (admin)
- *       '400':
- *         description: Validation error (invalid id)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (not owner; or user tries to cancel non-pending order)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Order not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.delete(
   '/:id',
@@ -345,22 +252,31 @@ router.delete(
  *                   items:
  *                     type: object
  *                     properties:
- *                       id: { type: integer }
- *                       total_amount: { type: number, format: float }
- *                       status: { type: string }
- *                       created_at: { type: string, format: date-time }
+ *                       id:
+ *                         type: integer
+ *                       total_amount:
+ *                         type: number
+ *                         format: float
+ *                       status:
+ *                         type: string
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
  *                       user:
  *                         type: object
  *                         properties:
- *                           id: { type: integer }
- *                           username: { type: string }
- *                           email: { type: string }
+ *                           id:
+ *                             type: integer
+ *                           username:
+ *                             type: string
+ *                           email:
+ *                             type: string
  *       401:
- *         description: Missing/invalid token
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden
+ *         $ref: '#/components/responses/Forbidden'
  *       500:
- *         description: Server error
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get(
   '/admin/orders',
@@ -377,11 +293,7 @@ router.get(
  *     tags: [Orders]
  *     security: [ { bearerAuth: [] } ]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: integer }
- *         description: Order id
+ *       - $ref: '#/components/parameters/PathId'
  *     responses:
  *       200:
  *         description: Order with items and owner
@@ -399,19 +311,22 @@ router.get(
  *                 user:
  *                   type: object
  *                   properties:
- *                     id: { type: integer }
- *                     username: { type: string }
- *                     email: { type: string }
+ *                     id:
+ *                       type: integer
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
  *       400:
- *         description: Invalid id
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Missing/invalid token
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  *       500:
- *         description: Server error
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get(
   '/admin/orders/:id',

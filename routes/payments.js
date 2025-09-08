@@ -14,40 +14,18 @@ const paymentsController = require('../controllers/paymentsController');
  *     security:
  *       - bearerAuth: []
  *     responses:
- *       '201':
+ *       201:
  *         description: PaymentIntent created
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 clientSecret:
- *                   type: string
- *                   example: pi_12345_secret_abcdef
- *                 amount:
- *                   type: integer
- *                   example: 2599
- *                 currency:
- *                   type: string
- *                   example: gbp
- *       '400':
- *         description: Cart is empty or invalid
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/PaymentIntentCreatedResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post('/create-intent', authHybrid, paymentsController.createPaymentIntent);
 

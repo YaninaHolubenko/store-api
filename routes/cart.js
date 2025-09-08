@@ -60,17 +60,9 @@ router.use(allowSessionOrToken);
  *                       quantity:
  *                         type: integer
  *       401:
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized'
  *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/', cartController.getCart);
 
@@ -110,23 +102,11 @@ router.get('/', cartController.getCart);
  *                     quantity:
  *                       type: integer
  *       400:
- *         description: Invalid product ID or quantity
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/NotFound'
  *       409:
  *         description: Insufficient stock (requested quantity exceeds available stock)
  *         content:
@@ -153,11 +133,7 @@ router.get('/', cartController.getCart);
  *                       type: integer
  *                       example: 3
  *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post(
   '/items',
@@ -177,9 +153,12 @@ router.post(
  * /cart/{cartId}/checkout:
  *   post:
  *     summary: Legacy checkout (deprecated)
- *     description: >
- *       This endpoint is deprecated. Use the Stripe flow instead:
- *       POST /payments/create-intent then POST /orders/complete.
+ *     description: |
+ *       This endpoint is **deprecated**.
+ *       
+ *       Use the Stripe flow instead:
+ *       1) `POST /payments/create-intent`
+ *       2) `POST /orders/complete`
  *     deprecated: true
  *     tags:
  *       - Cart
@@ -220,12 +199,7 @@ router.post(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the cart item to update
+ *       - $ref: '#/components/parameters/PathId'
  *     requestBody:
  *       required: true
  *       content:
@@ -255,29 +229,13 @@ router.post(
  *                     quantity:
  *                       type: integer
  *       400:
- *         description: Invalid quantity
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Cart item not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/NotFound'
  *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
   '/items/:id',
@@ -302,33 +260,16 @@ router.patch(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the cart item to remove
+ *       - $ref: '#/components/parameters/PathId'
  *     responses:
  *       200:
  *         description: Cart item removed successfully
  *       401:
- *         description: Missing or invalid token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Cart item not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/NotFound'
  *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/ServerError'
  */
 router.delete('/items/:id', cartController.removeItem);
 
