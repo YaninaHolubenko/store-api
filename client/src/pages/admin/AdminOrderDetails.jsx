@@ -13,6 +13,12 @@ const API_URL =
 
 const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled'];
 
+/* Build auth headers from stored JWT (works together with session cookie) */
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function formatMoney(v, currency = 'GBP') {
   const num = typeof v === 'number' ? v : Number(v || 0);
   return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(num);
@@ -36,7 +42,10 @@ export default function AdminOrderDetails() {
       try {
         setLoading(true);
         setErr('');
-        const res = await fetch(`${API_URL}/orders/admin/orders/${id}`, { credentials: 'include' });
+        const res = await fetch(`${API_URL}/orders/admin/orders/${id}`, {
+          credentials: 'include',
+          headers: { Accept: 'application/json', ...authHeaders() }, // add Bearer if present
+        });
         const data = await res.json().catch(() => null);
 
         if (!res.ok) {
@@ -70,7 +79,7 @@ export default function AdminOrderDetails() {
       const res = await fetch(`${API_URL}/orders/${order.id}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }, // add Bearer if present
         body: JSON.stringify({ status: editStatus }),
       });
       const data = await res.json().catch(() => null);

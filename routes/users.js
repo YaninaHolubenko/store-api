@@ -2,6 +2,7 @@
 const express = require('express');
 // Use hybrid auth: Passport session OR JWT (backward compatible)
 const authHybrid = require('../middlewares/authHybrid');
+const checkAdmin = require('../middlewares/checkAdmin');
 const userController = require('../controllers/userController');
 const { validationResult } = require('express-validator');
 const { updateProfileRules, idParamRule } = require('../validators/user');
@@ -43,6 +44,68 @@ router.use(authHybrid);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/', userController.getProfile);
+
+/**
+ * @openapi
+ * /users/admin:
+ *   get:
+ *     summary: List users (admin only) with optional search and pagination
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Search by username or email (ILIKE)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         required: false
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         required: false
+ *     responses:
+ *       '200':
+ *         description: Users list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       username: { type: string }
+ *                       email: { type: string, format: email }
+ *                       role: { type: string }
+ *                       created_at: { type: string, format: date-time }
+ *                 total:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 offset:
+ *                   type: integer
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ */
+router.get('/admin', checkAdmin, userController.adminList);
 
 /**
  * @openapi

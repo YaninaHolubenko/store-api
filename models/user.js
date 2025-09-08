@@ -71,11 +71,61 @@ async function deleteById(id) {
   await pool.query('DELETE FROM users WHERE id = $1', [id]);
 }
 
+/**
+ * List users with optional search and pagination (admin-safe fields only).
+ */
+async function list({ search = null, limit = 20, offset = 0 } = {}) {
+  const values = [];
+  let idx = 1;
+  let whereClause = '';
+
+  // optional search across username OR email
+  if (search) {
+    whereClause = `WHERE (username ILIKE $${idx} OR email ILIKE $${idx})`;
+    values.push(`%${search}%`);
+    idx += 1;
+  }
+
+  // numbered placeholders for limit/offset
+  const limitPos = idx; values.push(Number(limit)); idx += 1;
+  const offsetPos = idx; values.push(Number(offset));
+
+  const sql = `
+    SELECT id, username, email, role, created_at
+    FROM users
+    ${whereClause}
+    ORDER BY created_at DESC
+    LIMIT $${limitPos} OFFSET $${offsetPos}
+  `;
+
+  const res = await pool.query(sql, values);
+  return res.rows || [];
+}
+
+/**
+ * Count users (for pagination), same optional search as in list().
+ */
+async function count({ search = null } = {}) {
+  const values = [];
+  let whereClause = '';
+
+  if (search) {
+    whereClause = `WHERE (username ILIKE $1 OR email ILIKE $1)`;
+    values.push(`%${search}%`);
+  }
+
+  const sql = `SELECT COUNT(*)::int AS count FROM users ${whereClause}`;
+  const res = await pool.query(sql, values);
+  return res.rows[0]?.count ?? 0;
+}
+
 module.exports = {
   findByUsernameOrEmail,
   findById,
   findByIdWithRole,
   create,
   updateById,
-  deleteById
+  deleteById,
+  list,
+  count,
 };

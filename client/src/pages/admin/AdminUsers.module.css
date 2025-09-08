@@ -1,0 +1,110 @@
+/* client/src/pages/admin/AdminUsers.module.css */
+
+/* Header row with back link and title */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Search form + page size select */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  width: 100%;               /* span full width like the table */
+}
+
+.searchInput {
+  flex: 1;                   /* take all available space */
+  padding: 8px 10px;
+  min-width: 200px;          /* fallback for small screens */
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.pageSize {
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.button {
+  padding: 8px 14px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Feedback messages */
+.message {
+  padding: 8px 0;
+  color: #555;
+}
+.error {
+  color: #b00020;
+  padding: 8px 0;
+}
+
+/* Table */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.td {
+  padding: 10px 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.tdMono {
+  padding: 10px 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #f2f2f2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Role badge styling */
+.role {
+  white-space: nowrap;
+  color: #333;
+}
+.roleAdmin {
+  color: #0a7;
+  font-weight: 600;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.paginationInfo {
+  white-space: nowrap;
+}

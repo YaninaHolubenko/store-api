@@ -18,7 +18,8 @@ import OrderDetails from './pages/OrderDetails';
 import AdminHome from './pages/admin/AdminHome';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminOrderDetails from './pages/admin/AdminOrderDetails';
-import AdminProducts from './pages/admin/AdminProducts'; // <-- NEW
+import AdminProducts from './pages/admin/AdminProducts'; 
+import AdminUsers from './pages/admin/AdminUsers';
 
 export default function App() {
   return (
@@ -41,7 +42,8 @@ export default function App() {
         <Route path="/admin" element={<AdminHome />} />
         <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/admin/orders/:id" element={<AdminOrderDetails />} />
-        <Route path="/admin/products" element={<AdminProducts />} /> {/* <-- NEW */}
+        <Route path="/admin/products" element={<AdminProducts />} />
+        <Route path="/admin/users" element={<AdminUsers />} /> 
 
         {/* Fallback */}
         <Route path="*" element={<div style={{ padding: '1rem' }}>Not found</div>} />

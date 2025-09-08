@@ -10,6 +10,12 @@ const API_URL =
   process.env.REACT_APP_API_URL ||
   'http://localhost:3000';
 
+// Build auth headers from stored JWT (hybrid auth also supports session cookie)
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 // Allowed statuses for admin update
 const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled'];
 
@@ -72,17 +78,18 @@ export default function AdminOrders() {
         const url = new URL(`${API_URL}/orders/admin/orders`);
         if (statusFilter) url.searchParams.set('status', statusFilter);
 
-        const res = await fetch(url.toString(), { credentials: 'include' });
+        const res = await fetch(url.toString(), {
+          credentials: 'include',
+          headers: { Accept: 'application/json', ...authHeaders() }, // ← add Bearer if present
+        });
 
+        const data = await res.json().catch(() => null);
         if (!res.ok) {
-          const data = await res.json().catch(() => null);
           const msg = data?.error || `Failed to load orders (HTTP ${res.status})`;
           throw new Error(msg);
         }
 
-        const data = await res.json().catch(() => null);
         const list = Array.isArray(data?.orders) ? data.orders : [];
-
         if (!cancelled) setOrders(list);
       } catch (e) {
         if (!cancelled) {
@@ -94,9 +101,7 @@ export default function AdminOrders() {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [isAdmin, statusFilter]);
 
   // Normalize rows for table
@@ -136,14 +141,14 @@ export default function AdminOrders() {
       const res = await fetch(`${API_URL}/orders/${id}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }, // ← add Bearer if present
         body: JSON.stringify({ status: nextStatus }),
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         const msg = data?.error || `Failed to update (HTTP ${res.status})`;
-        window.alert(msg); // admin UX ok
+        window.alert(msg);
         return;
       }
 
@@ -219,7 +224,6 @@ export default function AdminOrders() {
             return (
               <div key={row.id} className={styles.tr} role="row">
                 <div className={styles.td} role="cell">
-                  {/* link to admin order details */}
                   <Link to={`/admin/orders/${row.id}`}>#{row.id}</Link>
                 </div>
                 <div className={styles.td} role="cell">

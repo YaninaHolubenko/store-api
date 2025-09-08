@@ -175,9 +175,31 @@ async function deleteById(req, res) {
   }
 }
 
+/**
+ * GET /users (admin only): list all users with optional search + pagination
+ */
+async function adminList(req, res) {
+  try {
+    const search = req.query.search || null;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const offset = parseInt(req.query.offset, 10) || 0;
+
+    const [users, total] = await Promise.all([
+      User.list({ search, limit, offset }),
+      User.count({ search }),
+    ]);
+
+    res.json({ users, total, limit, offset });
+  } catch (err) {
+    console.error('Error in adminList:', err);
+    res.status(500).json({ error: 'Failed to list users' });
+  }
+}
+
 module.exports = {
   getProfile,
   getById,
   updateProfile,
   deleteById,
+  adminList,
 };

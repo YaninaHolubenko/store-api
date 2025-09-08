@@ -1,3 +1,4 @@
+//client/src/pages/admin/AdminHome.jsx
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';

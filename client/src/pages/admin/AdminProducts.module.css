@@ -1,3 +1,4 @@
+/* store-api\client\src\pages\admin\AdminProducts.module.css */
 /* Header + filters */
 .header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
 .filters { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
