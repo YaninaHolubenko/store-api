@@ -1,8 +1,7 @@
-// controllers/orderController.js
 const Order = require('../models/order');
-const User = require('../models/user'); // to load role when needed
-const Cart = require('../models/cart'); // <-- added for checkout after payment
-const { getStripe } = require('../config/stripe'); // <-- added to verify PaymentIntent
+const User = require('../models/user');
+const Cart = require('../models/cart');
+const { getStripe } = require('../config/stripe');
 
 /**
  * Get all orders for current user
@@ -53,7 +52,6 @@ async function updateStatus(req, res) {
 
     // Extra safety: ensure admin (checkAdmin should have set req.user.role)
     if (req.user?.role !== 'admin') {
-      // Fallback: load from DB if not set
       const dbUser = await User.findByIdWithRole(req.user.id);
       if (!dbUser || dbUser.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden' });
@@ -71,7 +69,6 @@ async function updateStatus(req, res) {
   }
 }
 
-
 /**
  * Delete or cancel an order:
  * - Admin: hard delete any order (order + items)
@@ -86,7 +83,6 @@ async function deleteOrder(req, res) {
       return res.status(400).json({ error: 'Invalid order id' });
     }
 
-    // Determine role (authenticateToken doesn't attach role by default)
     let role = req.user.role;
     if (!role) {
       const dbUser = await User.findByIdWithRole(userId);
@@ -104,7 +100,6 @@ async function deleteOrder(req, res) {
       return res.status(204).send();
     }
 
-    // Regular user: must own the order and it must be 'pending'
     if (meta.user_id !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
@@ -114,7 +109,6 @@ async function deleteOrder(req, res) {
 
     const cancelled = await Order.cancelOwnPending(orderId, userId);
     if (!cancelled) {
-      // race condition: status changed meanwhile
       return res.status(409).json({ error: 'Order cannot be cancelled anymore' });
     }
 
@@ -125,7 +119,9 @@ async function deleteOrder(req, res) {
   }
 }
 
-// Admin: list all orders with owner info (optional ?status=)
+/**
+ * Admin: list all orders with owner info (optional ?status=)
+ */
 async function adminListAll(req, res) {
   try {
     const { status } = req.query;
@@ -137,7 +133,9 @@ async function adminListAll(req, res) {
   }
 }
 
-// Admin: get any order with items and owner info
+/**
+ * Admin: get any order with items and owner info
+ */
 async function adminGetOne(req, res) {
   try {
     const orderId = parseInt(req.params.id, 10);
@@ -177,16 +175,13 @@ async function completeAfterPayment(req, res) {
     const stripe = getStripe();
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    // Basic validation of funds capture
     if (!intent || intent.status !== 'succeeded') {
       return res.status(400).json({ error: 'Payment is not completed' });
     }
-    // Currency must be GBP
     if (intent.currency !== 'gbp') {
       return res.status(400).json({ error: 'Unsupported currency' });
     }
 
-    // Metadata must bind the intent to our app user/cart
     const meta = intent.metadata || {};
     const metaUserId = Number(meta.app_user_id || 0);
     const metaCartId = Number(meta.app_cart_id || 0);
@@ -198,13 +193,11 @@ async function completeAfterPayment(req, res) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // Extra safety: ensure the cart really belongs to the user
     const owns = await Cart.userOwnsCart(metaCartId, userId);
     if (!owns) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // Convert cart into a real order (transaction inside the model)
     const result = await Cart.checkoutCart(metaCartId, userId);
 
     return res.status(201).json({
@@ -225,5 +218,5 @@ module.exports = {
   deleteOrder,
   adminListAll,
   adminGetOne,
-  completeAfterPayment, // <-- export new action
+  completeAfterPayment, // export new action
 };

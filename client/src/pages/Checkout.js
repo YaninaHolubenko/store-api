@@ -1,4 +1,3 @@
-// client/src/pages/Checkout.js
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Container from '../components/Container';
@@ -9,7 +8,10 @@ import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentSection from '../components/checkout/PaymentSection';
 import styles from './Checkout.module.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:3000';
 
 // Build auth headers from stored JWT
 function authHeaders() {
@@ -41,9 +43,9 @@ export default function Checkout() {
         return;
       }
 
-      // Immediately clear local cart to avoid showing old items
+      // Clear local cart immediately to avoid stale UI
       clear();
-      // Then reconcile with server (ensures badge/total are consistent)
+      // Then refresh from server to keep badges/counters in sync
       await refresh();
 
       navigate('/orders', { replace: true });
