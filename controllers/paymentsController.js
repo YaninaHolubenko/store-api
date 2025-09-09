@@ -3,7 +3,7 @@ const { getStripe } = require('../config/stripe');
 const Cart = require('../models/cart');
 
 /**
- * Convert a decimal price in GBP pounds to an integer amount in pence.
+ * Convert a decimal price in GBP pounds to an integer amount in the smallest currency unit (pence).
  * Rounds to nearest penny to avoid floating point artifacts.
  */
 function toPence(value) {
@@ -36,7 +36,7 @@ async function computeCartAmountInPence(userId) {
 
 /**
  * POST /payments/create-intent
- * Creates a Stripe PaymentIntent for the current user's cart total (GBP).
+ * Creates a Stripe PaymentIntent for the current user's cart total.
  * Returns client_secret for client-side confirmation.
  */
 async function createPaymentIntent(req, res) {
@@ -47,19 +47,29 @@ async function createPaymentIntent(req, res) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Compute amount in pence from server-side cart
-    const { amount, cartId } = await computeCartAmountInPence(userId);
+    // Compute amount in the smallest currency unit from server-side cart
+    const { amount, cartId, items } = await computeCartAmountInPence(userId);
 
+    // Explicit and user-friendly checks
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: 'Cart is empty' });
+    }
     if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Cart is empty or total is zero' });
+      return res.status(400).json({ error: 'Cart total is zero' });
     }
 
     const stripe = getStripe();
 
-    // Create PaymentIntent; currency is GBP (we show £ on the client)
-    const intent = await stripe.paymentIntents.create({
+    // Use currency from env (default gbp). Stripe expects lower-case ISO code.
+    const currency = String(process.env.STRIPE_CURRENCY || 'gbp').toLowerCase();
+
+    // Optional idempotency-key support to avoid duplicate charges on retries
+    // Client can send: 'Idempotency-Key: <uuid>'
+    const idempotencyKey = req.get('Idempotency-Key');
+
+    const createParams = {
       amount,
-      currency: 'gbp',
+      currency,
       // Automatic payment methods simplify payment method selection
       automatic_payment_methods: { enabled: true },
       metadata: {
@@ -67,12 +77,17 @@ async function createPaymentIntent(req, res) {
         app_cart_id: String(cartId),
         // NOTE: do NOT put sensitive data in metadata
       },
-    });
+    };
+
+    const intent = await stripe.paymentIntents.create(
+      createParams,
+      idempotencyKey ? { idempotencyKey } : undefined
+    );
 
     return res.status(201).json({
       clientSecret: intent.client_secret,
-      amount,         // in pence
-      currency: 'gbp',
+      amount,   // in the smallest currency unit (e.g., pence)
+      currency, // e.g., 'gbp'
     });
   } catch (err) {
     // Log internal details for diagnostics; return generic message to client

@@ -1,7 +1,33 @@
+// controllers/orderController.js
 const Order = require('../models/order');
 const User = require('../models/user');
 const Cart = require('../models/cart');
 const { getStripe } = require('../config/stripe');
+
+/**
+ * Convert decimal price to smallest currency unit (e.g., pence for GBP).
+ * Rounds to avoid floating point artifacts.
+ */
+function toMinorUnit(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n * 100);
+}
+
+/**
+ * Compute cart total (in minor units) by cart id.
+ * Uses server-side prices to prevent client tampering.
+ */
+async function computeCartAmountByCartId(cartId) {
+  const items = await Cart.getItemsWithProductDetails(cartId);
+  let amount = 0;
+  for (const it of items) {
+    const price = toMinorUnit(it.price);
+    const qty = Number(it.quantity) || 0;
+    amount += price * qty;
+  }
+  return { amount, items };
+}
 
 /**
  * Get all orders for current user
@@ -10,6 +36,7 @@ async function listOrders(req, res) {
   try {
     const userId = req.user.id;
     const orders = await Order.findAllByUser(userId);
+    // Keep the existing response shape to avoid breaking the client
     res.json({ orders });
   } catch (err) {
     console.error(err);
@@ -158,7 +185,8 @@ async function adminGetOne(req, res) {
  * Complete order after successful Stripe payment.
  * - Validates PaymentIntent (status, currency, metadata)
  * - Verifies that the PaymentIntent belongs to the current user
- * - Converts cart -> order inside a single transactional method
+ * - Compares PI amount with current server-side cart total by cartId
+ * - Converts cart -> order via a transactional method
  */
 async function completeAfterPayment(req, res) {
   try {
@@ -178,7 +206,9 @@ async function completeAfterPayment(req, res) {
     if (!intent || intent.status !== 'succeeded') {
       return res.status(400).json({ error: 'Payment is not completed' });
     }
-    if (intent.currency !== 'gbp') {
+
+    const envCurrency = String(process.env.STRIPE_CURRENCY || 'gbp').toLowerCase();
+    if ((intent.currency || '').toLowerCase() !== envCurrency) {
       return res.status(400).json({ error: 'Unsupported currency' });
     }
 
@@ -193,18 +223,48 @@ async function completeAfterPayment(req, res) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
+    // Ownership check
     const owns = await Cart.userOwnsCart(metaCartId, userId);
     if (!owns) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const result = await Cart.checkoutCart(metaCartId, userId);
+    // Server-side total for this specific cart id
+    const { amount: serverAmount, items } = await computeCartAmountByCartId(metaCartId);
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: 'Cart is empty' });
+    }
 
-    return res.status(201).json({
-      orderId: result.orderId,
-      totalAmount: result.totalAmount,
-      status: result.status,
-    });
+    // Compare intent amount with current server-side total
+    if (Number(intent.amount) !== Number(serverAmount)) {
+      return res.status(400).json({ error: 'Payment amount does not match cart total' });
+    }
+
+    // Perform transactional checkout (expected to create order, move items, adjust stock, and clear cart)
+    try {
+      const result = await Cart.checkoutCart(metaCartId, userId);
+      if (!result || !result.orderId) {
+        // Defensive: if model signals failure
+        return res.status(500).json({ error: 'Failed to finalize order' });
+      }
+
+      return res.status(201).json({
+        orderId: result.orderId,
+        totalAmount: result.totalAmount,
+        status: result.status,
+      });
+    } catch (e) {
+      // Map known model errors to 400 with details (per swagger /orders/complete)
+      if (
+        e &&
+        (e.code === 'CART_EMPTY' ||
+          e.code === 'INSUFFICIENT_STOCK' ||
+          e.code === 'INSUFFICIENT_STOCK_AT_CHECKOUT')
+      ) {
+        return res.status(400).json({ error: e.message, details: e.details || undefined });
+      }
+      throw e;
+    }
   } catch (err) {
     console.error('[orders.completeAfterPayment] error:', err);
     return res.status(500).json({ error: 'Failed to complete order' });
@@ -218,5 +278,5 @@ module.exports = {
   deleteOrder,
   adminListAll,
   adminGetOne,
-  completeAfterPayment, // export new action
+  completeAfterPayment,
 };

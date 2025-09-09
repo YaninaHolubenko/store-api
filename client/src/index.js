@@ -1,4 +1,4 @@
-// Wrap the app with BrowserRouter so routes work
+// index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

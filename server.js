@@ -6,6 +6,7 @@ const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
+const compression = require('compression'); // add gzip compression
 
 const googleAuthRouter = require('./routes/auth.google');
 const sessionRouter = require('./routes/session');
@@ -50,6 +51,10 @@ app.use(
 );
 
 app.use(express.json({ limit: '10kb' }));
+app.use(compression()); // enable gzip compression for all responses
+
+// --- Health check for platform probes ---
+app.get('/healthz', (_req, res) => res.status(200).send('ok'));
 
 // --- Sanitize incoming data early (before routes) ---
 // Skip sanitizing for specific keys where raw strings must be preserved.
@@ -87,15 +92,28 @@ app.use(
 );
 
 // --- Enable sessions (required for Passport sessions) ---
+// Use a durable session store in production to avoid MemoryStore.
+let sessionStore = undefined;
+if (IS_PROD) {
+  const pgSession = require('connect-pg-simple')(session);
+  const pool = require('./db');
+  sessionStore = new pgSession({
+    pool,
+    tableName: 'session',
+    createTableIfMissing: true, // auto-create the table if not exists
+  });
+}
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'dev_session_secret',
     resave: false,
     saveUninitialized: false,
     rolling: true,
+    store: sessionStore, // undefined in dev -> MemoryStore; pg store in prod
     cookie: {
       httpOnly: true,
-      secure: IS_PROD,
+      secure: IS_PROD,                 // secure cookies on HTTPS (Render)
       sameSite: IS_PROD ? 'none' : 'lax',
       maxAge: Number(process.env.SESSION_TTL_MS || 7 * 24 * 60 * 60 * 1000),
     },
@@ -104,10 +122,8 @@ app.use(
 
 // --- Passport setup ---
 setupPassportLocal(passport);
-app.use(passport.initialize());
-app.use(passport.session());
 
-// Minimal serialization: keep slim user object in session
+// Define serializers BEFORE passport.session() to be explicit
 passport.serializeUser((user, done) => {
   const slim =
     user && typeof user === 'object'
@@ -122,12 +138,19 @@ passport.serializeUser((user, done) => {
 });
 passport.deserializeUser((obj, done) => done(null, obj));
 
+app.use(passport.initialize());
+app.use(passport.session());
+
 // --- Auth/session routes ---
 app.use('/auth', sessionRouter);
 app.use('/auth', googleAuthRouter);
 
 // --- Swagger ---
-setupSwagger(app);
+// Allow disabling Swagger in production via env flag, default is enabled
+const SWAGGER_ENABLED = process.env.SWAGGER_ENABLED !== 'false';
+if (SWAGGER_ENABLED) {
+  setupSwagger(app);
+}
 
 // --- API routes ---
 app.use('/products', productsRouter);
