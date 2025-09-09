@@ -1,5 +1,3 @@
-/* client/src/pages/admin/AdminUsers.module.css */
-
 /* Header row with back link and title */
 .header {
   display: flex;
@@ -14,21 +12,24 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
-  width: 100%;               /* span full width like the table */
+  width: 100%;
 }
 
 .searchInput {
-  flex: 1;                   /* take all available space */
+  flex: 1;
   padding: 8px 10px;
-  min-width: 200px;          /* fallback for small screens */
+  min-width: 200px;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 10px;
+  background: #fff;
+  box-sizing: border-box;
 }
 
 .pageSize {
   padding: 8px 10px;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 10px;
+  background: #fff;
 }
 
 .button {
@@ -36,66 +37,67 @@
   border: 1px solid #111;
   background: #111;
   color: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
 }
 .button:disabled {
-  opacity: 0.6;
+  opacity: .6;
   cursor: default;
 }
 
 /* Feedback messages */
-.message {
-  padding: 8px 0;
-  color: #555;
-}
-.error {
-  color: #b00020;
-  padding: 8px 0;
+.message { padding: 8px 0; color: #555; }
+.error   { padding: 8px 0; color: #b00020; }
+
+/* Table container */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #eceef1;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(0,0,0,.05);
 }
 
 /* Table */
-.tableWrap {
-  overflow-x: auto;
-  border: 1px solid #eee;
-  border-radius: 8px;
-}
-
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 640px; /* keeps columns readable when scrolled */
 }
 
 .th {
   text-align: left;
-  padding: 10px 12px;
-  font-weight: 600;
+  padding: 12px 14px;
+  font-weight: 700;
   font-size: 14px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #eef0f3;
+  color: #1f2937;
+  background: #f9fafb;
 }
 
-.td {
-  padding: 10px 12px;
+.td,
+.tdMono {
+  padding: 12px 14px;
   font-size: 14px;
-  border-bottom: 1px solid #f2f2f2;
+  border-bottom: 1px solid #f4f5f7;
+  color: #111827;
 }
 
 .tdMono {
-  padding: 10px 12px;
-  font-size: 14px;
-  border-bottom: 1px solid #f2f2f2;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-/* Role badge styling */
-.role {
-  white-space: nowrap;
-  color: #333;
-}
-.roleAdmin {
-  color: #0a7;
-  font-weight: 600;
-}
+/* Column sizing + truncation */
+.colId   { width: 72px;  white-space: nowrap; }
+.colUser { width: 220px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.colMail { width: auto;  max-width: 420px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Row affordances */
+.table tr:hover td { background: #fbfdff; }
+
+/* Role badge */
+.role { white-space: nowrap; color: #374151; }
+.roleAdmin { color: #0a7; font-weight: 700; }
 
 /* Pagination */
 .pagination {
@@ -104,7 +106,29 @@
   align-items: center;
   margin-top: 16px;
 }
+.paginationInfo { white-space: nowrap; }
 
-.paginationInfo {
-  white-space: nowrap;
+/* Responsive: stack toolbar on small screens */
+@media (max-width: 720px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .pageSize,
+  .button {
+    width: 100%;
+  }
+  .searchInput {
+    min-width: 0;
+    width: 100%;
+  }
+  /* allow e-mail to occupy more width before truncation */
+  .colUser { max-width: 40%; }
+  .colMail { max-width: none; }
+}
+
+/* Extra-compact phones */
+@media (max-width: 420px) {
+  .table { min-width: 560px; } /* keeps headers legible; horizontal scroll appears */
 }
