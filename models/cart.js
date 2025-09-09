@@ -1,12 +1,13 @@
 // models/cart.js
 const pool = require('../db/index');
 
+/**
+ * Find an existing cart for the user or create a new one.
+ */
 async function findOrCreateByUser(userId) {
-  const res = await pool.query(
-    'SELECT id FROM carts WHERE user_id = $1',
-    [userId]
-  );
+  const res = await pool.query('SELECT id FROM carts WHERE user_id = $1', [userId]);
   if (res.rows.length) return res.rows[0];
+
   const ins = await pool.query(
     'INSERT INTO carts (user_id) VALUES ($1) RETURNING id',
     [userId]
@@ -14,38 +15,57 @@ async function findOrCreateByUser(userId) {
   return ins.rows[0];
 }
 
+/**
+ * Return cart items joined with product info for rendering / totals.
+ */
 async function getItemsWithProductDetails(cartId) {
   const res = await pool.query(
-    `SELECT ci.id AS cart_item_id, p.id AS product_id, p.name, p.description, p.price, p.image_url, ci.quantity
-     FROM cart_items ci
-     JOIN products p ON ci.product_id = p.id
-     WHERE ci.cart_id = $1`,
+    `
+    SELECT
+      ci.id        AS cart_item_id,
+      p.id         AS product_id,
+      p.name,
+      p.description,
+      p.price,
+      p.image_url,
+      ci.quantity
+    FROM cart_items ci
+    JOIN products p ON ci.product_id = p.id
+    WHERE ci.cart_id = $1
+    `,
     [cartId]
   );
   return res.rows;
 }
 
+/**
+ * Add an item to the cart or increase its quantity.
+ * Enforces stock limit at insert/update time.
+ * Throws Error with .code = 'PRODUCT_NOT_FOUND' | 'INVALID_QUANTITY' | 'INSUFFICIENT_STOCK'
+ */
 async function addOrUpdateItem(cartId, productId, quantity) {
-  // Validate input quantity
   const qty = Number(quantity);
-  if (!Number.isInteger(qty) || qty < 1) {
-    const err = new Error('Invalid quantity');
-    err.code = 'INVALID_QUANTITY';
-    throw err;
+  if (!Number.isInteger(qty) || qty <= 0) {
+    const e = new Error('Invalid quantity');
+    e.code = 'INVALID_QUANTITY';
+    throw e;
   }
 
-  // Check product existence and stock
-  const prod = await pool.query('SELECT id, stock FROM products WHERE id = $1', [productId]);
+  // Load product (with stock/name for better error details)
+  const prod = await pool.query(
+    'SELECT id, name, stock FROM products WHERE id = $1',
+    [productId]
+  );
   if (!prod.rows.length) {
-    const err = new Error('Product not found');
-    err.code = 'PRODUCT_NOT_FOUND';
-    throw err;
+    const e = new Error('Product not found');
+    e.code = 'PRODUCT_NOT_FOUND';
+    throw e;
   }
-  const available = Number(prod.rows[0].stock) || 0;
+  const product = prod.rows[0];
 
-  // Check if item exists
+  // Check if this item already exists in the cart
   const existing = await pool.query(
-    'SELECT id, quantity FROM cart_items WHERE cart_id=$1 AND product_id=$2',
+    'SELECT id, quantity FROM cart_items WHERE cart_id = $1 AND product_id = $2',
     [cartId, productId]
   );
 
@@ -53,101 +73,136 @@ async function addOrUpdateItem(cartId, productId, quantity) {
     const currentQty = Number(existing.rows[0].quantity) || 0;
     const newQty = currentQty + qty;
 
-    // Enforce stock at cart level to give early feedback
-    if (newQty > available) {
-      const err = new Error('Insufficient stock');
-      err.code = 'INSUFFICIENT_STOCK';
-      err.details = { productId: Number(productId), requested: newQty, available };
-      throw err;
+    if (newQty > Number(product.stock)) {
+      const e = new Error('Insufficient stock');
+      e.code = 'INSUFFICIENT_STOCK';
+      e.details = {
+        productId: Number(product.id),
+        productName: product.name,
+        requested: newQty,
+        available: Number(product.stock),
+      };
+      throw e;
     }
 
     const up = await pool.query(
-      'UPDATE cart_items SET quantity=$1 WHERE id=$2 RETURNING id AS cart_item_id, product_id, quantity',
+      `
+      UPDATE cart_items
+      SET quantity = $1
+      WHERE id = $2
+      RETURNING id AS cart_item_id, product_id, quantity
+      `,
       [newQty, existing.rows[0].id]
     );
     return up.rows[0];
   }
 
-  // New cart item
-  if (qty > available) {
-    const err = new Error('Insufficient stock');
-    err.code = 'INSUFFICIENT_STOCK';
-    err.details = { productId: Number(productId), requested: qty, available };
-    throw err;
+  // New row path
+  if (qty > Number(product.stock)) {
+    const e = new Error('Insufficient stock');
+    e.code = 'INSUFFICIENT_STOCK';
+    e.details = {
+      productId: Number(product.id),
+      productName: product.name,
+      requested: qty,
+      available: Number(product.stock),
+    };
+    throw e;
   }
 
   const ins = await pool.query(
-    'INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1,$2,$3) RETURNING id AS cart_item_id, product_id, quantity',
+    `
+    INSERT INTO cart_items (cart_id, product_id, quantity)
+    VALUES ($1, $2, $3)
+    RETURNING id AS cart_item_id, product_id, quantity
+    `,
     [cartId, productId, qty]
   );
   return ins.rows[0];
 }
 
+/**
+ * Transactional checkout:
+ * - Validates stock for all items (again) under FOR UPDATE
+ * - Decrements product stock
+ * - Creates order and order_items
+ * - Clears cart items
+ * Returns { orderId, totalAmount, status }
+ *
+ * Throws Error with .code = 'CART_EMPTY' | 'INSUFFICIENT_STOCK_AT_CHECKOUT'
+ */
 async function checkoutCart(cartId, userId) {
   const client = await pool.connect();
   try {
-    // 1) Start SQL transaction
     await client.query('BEGIN');
 
-    // 2) Lock cart items and products to avoid concurrent changes during checkout
+    // Lock items and read product stock/price
     const { rows: items } = await client.query(
       `
-      SELECT ci.product_id, ci.quantity, p.price, p.stock
+      SELECT
+        ci.product_id,
+        ci.quantity,
+        p.name,
+        p.stock,
+        p.price
       FROM cart_items ci
       JOIN products p ON p.id = ci.product_id
       WHERE ci.cart_id = $1
-      FOR UPDATE OF ci, p
+      FOR UPDATE
       `,
       [cartId]
     );
 
     if (!items || items.length === 0) {
-      const err = new Error('Cart empty');
-      err.code = 'CART_EMPTY';
-      throw err;
+      const e = new Error('Cart empty');
+      e.code = 'CART_EMPTY';
+      throw e;
     }
 
-    // 3) Ensure stock is sufficient for every item (re-check at checkout time)
-    for (const i of items) {
-      const qty = Number(i.quantity) || 0;
-      const stock = Number(i.stock) || 0;
-      if (qty > stock) {
-        const err = new Error('Insufficient stock at checkout');
-        err.code = 'INSUFFICIENT_STOCK_AT_CHECKOUT';
-        err.details = {
-          productId: Number(i.product_id),
-          requested: qty,
-          available: stock,
+    // Validate stock before any update
+    for (const it of items) {
+      const wanted = Number(it.quantity) || 0;
+      const available = Number(it.stock) || 0;
+      if (wanted > available) {
+        const e = new Error('Insufficient stock at checkout');
+        e.code = 'INSUFFICIENT_STOCK_AT_CHECKOUT';
+        e.details = {
+          productId: Number(it.product_id),
+          productName: it.name,
+          requested: wanted,
+          available,
         };
-        throw err;
+        throw e;
       }
     }
 
-    // 4) Compute total in SQL (numeric for precision)
-    const { rows: totalRows } = await client.query(
-      `
-      SELECT SUM(ci.quantity::numeric * p.price) AS total
-      FROM cart_items ci
-      JOIN products p ON p.id = ci.product_id
-      WHERE ci.cart_id = $1
-      `,
-      [cartId]
-    );
-    const total = totalRows[0]?.total ?? 0; // numeric from PG (string compatible)
+    // Decrement stock
+    for (const it of items) {
+      await client.query(
+        'UPDATE products SET stock = stock - $1 WHERE id = $2',
+        [it.quantity, it.product_id]
+      );
+    }
 
-    // 5) Create order
+    // Compute total
+    const total = items.reduce(
+      (sum, i) => sum + Number(i.price) * Number(i.quantity),
+      0
+    );
+
+    // Create order
     const { rows: orderRows } = await client.query(
       `
       INSERT INTO orders (user_id, total_amount)
       VALUES ($1, $2)
-      RETURNING id AS orderId, total_amount, status
+      RETURNING id, total_amount, status
       `,
       [userId, total]
     );
     const order = orderRows[0];
-    const orderId = order.orderId ?? order.orderid ?? order.id;
+    const orderId = order.id;
 
-    // 6) Insert order items
+    // Insert order items
     for (const i of items) {
       await client.query(
         `
@@ -158,28 +213,17 @@ async function checkoutCart(cartId, userId) {
       );
     }
 
-    // 7) Decrement product stock
-    for (const i of items) {
-      await client.query(
-        `UPDATE products SET stock = stock - $2 WHERE id = $1`,
-        [i.product_id, i.quantity]
-      );
-    }
-
-    // 8) Clear the cart
+    // Clear cart
     await client.query('DELETE FROM cart_items WHERE cart_id = $1', [cartId]);
 
-    // 9) Commit transaction
     await client.query('COMMIT');
 
-    // 10) Keep the original response shape expected by the controller
     return {
-      orderId: orderId,
+      orderId,
       totalAmount: order.total_amount,
       status: order.status,
     };
   } catch (err) {
-    // Rollback on any error to avoid partial orders
     try { await client.query('ROLLBACK'); } catch (_) {}
     throw err;
   } finally {
@@ -187,32 +231,45 @@ async function checkoutCart(cartId, userId) {
   }
 }
 
+/**
+ * Change quantity for a cart item owned by the user.
+ */
 async function updateItemQuantity(cartItemId, userId, quantity) {
   const res = await pool.query(
-    `UPDATE cart_items ci
-     SET quantity=$1
-     FROM carts c
-     WHERE ci.cart_id=c.id AND ci.id=$2 AND c.user_id=$3
-     RETURNING ci.id AS id, ci.product_id, ci.quantity`,
+    `
+    UPDATE cart_items ci
+    SET quantity = $1
+    FROM carts c
+    WHERE ci.cart_id = c.id
+      AND ci.id = $2
+      AND c.user_id = $3
+    RETURNING ci.id AS id, ci.product_id, ci.quantity
+    `,
     [quantity, cartItemId, userId]
   );
   return res.rows[0] || null;
 }
 
+/**
+ * Remove a cart item owned by the user.
+ */
 async function removeItem(cartItemId, userId) {
   const res = await pool.query(
-    `DELETE FROM cart_items ci
-     USING carts c
-     WHERE ci.cart_id=c.id AND ci.id=$1 AND c.user_id=$2
-     RETURNING ci.id`,
+    `
+    DELETE FROM cart_items ci
+    USING carts c
+    WHERE ci.cart_id = c.id
+      AND ci.id = $1
+      AND c.user_id = $2
+    RETURNING ci.id
+    `,
     [cartItemId, userId]
   );
   return res.rows.length > 0;
 }
 
 /**
- * Check if a given cartId belongs to the given userId
- * @returns {Promise<boolean>}
+ * Check if a given cart belongs to the user.
  */
 async function userOwnsCart(cartId, userId) {
   const result = await pool.query(
