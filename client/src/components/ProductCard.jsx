@@ -5,7 +5,6 @@ import SafeImage from './SafeImage';
 import styles from './ProductCard.module.css';
 
 export default function ProductCard({ product, category }) {
-  // product may come with image_url (API) or image (mapped on client)
   const img = product.image_url || product.image || '';
 
   const priceNumber =
@@ -24,7 +23,6 @@ export default function ProductCard({ product, category }) {
           className={styles.img}
           loading="lazy"
           referrerPolicy="no-referrer"
-          // subtle inline placeholder if the image fails
           fallback={
             'data:image/svg+xml;utf8,' +
             encodeURIComponent(
