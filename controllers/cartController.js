@@ -3,7 +3,8 @@ const Cart = require('../models/cart');
 const pool = require('../db/index');
 
 // Feature flag: allow enabling legacy checkout flow if needed (default: off)
-const ENABLE_LEGACY_CHECKOUT = String(process.env.LEGACY_CHECKOUT_ENABLED || '').toLowerCase() === 'true';
+const ENABLE_LEGACY_CHECKOUT =
+  String(process.env.LEGACY_CHECKOUT_ENABLED || '').toLowerCase() === 'true';
 
 /**
  * Resolve integer local user id for both JWT and Google session.
@@ -32,7 +33,9 @@ async function resolveLocalUserId(req) {
 
   const r = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
   if (!r.rows.length) {
-    const e = new Error('Account for this Google email is not linked. Please register once with the same email.');
+    const e = new Error(
+      'Account for this Google email is not linked. Please register once with the same email.'
+    );
     e.status = 401;
     throw e;
   }
@@ -57,7 +60,7 @@ async function getCart(req, res) {
 
 /**
  * Add product to cart or update quantity (route: POST /cart/items)
- * Uses model-level stock enforcement and maps model errors to HTTP.
+ * — серверная проверка остатков перед вставкой/обновлением
  */
 async function addItem(req, res) {
   try {
@@ -71,36 +74,72 @@ async function addItem(req, res) {
       return res.status(400).json({ error: 'Quantity must be positive integer' });
     }
 
-    const { id: cartId } = await Cart.findOrCreateByUser(userId);
+    const cart = await Cart.findOrCreateByUser(userId);
+    const cartId = cart.id;
 
-    // Delegate to model to avoid duplicating stock logic
-    try {
-      const row = await Cart.addOrUpdateItem(cartId, productId, quantity);
-      // Normalize response to the documented shape
-      return res.status(201).json({
-        message: 'Item added to cart',
-        item: {
-          id: row.cart_item_id ?? row.id,
-          productId: row.product_id ?? row.productId ?? productId,
-          quantity: row.quantity,
-        },
-      });
-    } catch (e) {
-      if (e.code === 'PRODUCT_NOT_FOUND') {
-        return res.status(404).json({ error: 'Product not found' });
-      }
-      if (e.code === 'INVALID_QUANTITY') {
-        return res.status(400).json({ error: 'Invalid quantity' });
-      }
-      if (e.code === 'INSUFFICIENT_STOCK') {
-        // Keep details if provided by the model
+    // Load product & stock
+    const productRes = await pool.query(
+      'SELECT id, name, stock FROM products WHERE id = $1',
+      [productId]
+    );
+    if (productRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    const product = productRes.rows[0];
+
+    // Check if already in cart
+    const existingRes = await pool.query(
+      'SELECT id, quantity FROM cart_items WHERE cart_id = $1 AND product_id = $2',
+      [cartId, productId]
+    );
+
+    if (existingRes.rows.length > 0) {
+      const newQty = Number(existingRes.rows[0].quantity) + Number(quantity);
+      if (newQty > Number(product.stock)) {
         return res.status(409).json({
           error: 'Insufficient stock',
-          details: e.details || { productId, requested: quantity },
+          details: {
+            productId: product.id,
+            productName: product.name,
+            requested: newQty,
+            available: Number(product.stock),
+          },
         });
       }
-      throw e;
+
+      await pool.query('UPDATE cart_items SET quantity = $1 WHERE id = $2', [
+        newQty,
+        existingRes.rows[0].id,
+      ]);
+
+      return res.status(201).json({
+        message: 'Item added to cart',
+        item: { id: existingRes.rows[0].id, productId: product.id, quantity: newQty },
+      });
     }
+
+    // Insert new row
+    if (Number(quantity) > Number(product.stock)) {
+      return res.status(409).json({
+        error: 'Insufficient stock',
+        details: {
+          productId: product.id,
+          productName: product.name,
+          requested: Number(quantity),
+          available: Number(product.stock),
+        },
+      });
+    }
+
+    const insItem = await pool.query(
+      'INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id',
+      [cartId, productId, quantity]
+    );
+
+    return res.status(201).json({
+      message: 'Item added to cart',
+      item: { id: insItem.rows[0].id, productId: product.id, quantity: Number(quantity) },
+    });
   } catch (err) {
     console.error(err);
     const status = err.status || 500;
@@ -149,17 +188,17 @@ async function legacyCheckoutTransactional(req, res) {
             productName: it.name,
             requested: Number(it.quantity),
             available: Number(it.stock),
-          }
+          },
         });
       }
     }
 
     // Decrement stock
     for (const it of items) {
-      await client.query(
-        `UPDATE products SET stock = stock - $1 WHERE id = $2`,
-        [it.quantity, it.product_id]
-      );
+      await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [
+        it.quantity,
+        it.product_id,
+      ]);
     }
 
     const userId = await resolveLocalUserId(req);
@@ -205,7 +244,9 @@ async function legacyCheckoutTransactional(req, res) {
     return res.status(201).json({ order, message: 'Order placed and stock updated' });
   } catch (err) {
     console.error(err);
-    try { await client.query('ROLLBACK'); } catch (_) {}
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
     return res.status(err.status || 500).json({ error: err.message || 'Server error' });
   } finally {
     client.release();
@@ -219,7 +260,8 @@ async function legacyCheckoutTransactional(req, res) {
 async function checkout(req, res) {
   if (!ENABLE_LEGACY_CHECKOUT) {
     return res.status(410).json({
-      error: 'This endpoint is deprecated. Use /payments/create-intent then /orders/complete.',
+      error:
+        'This endpoint is deprecated. Use /payments/create-intent then /orders/complete.',
     });
   }
   // Fallback to legacy behavior if explicitly enabled
@@ -242,7 +284,7 @@ async function updateItem(req, res) {
     // Load product and stock for this cart item owned by the user
     const { rows } = await pool.query(
       `
-      SELECT ci.id, ci.quantity AS current_qty, ci.product_id, p.stock
+      SELECT ci.id, ci.quantity AS current_qty, ci.product_id, p.name, p.stock
       FROM cart_items ci
       JOIN carts c ON c.id = ci.cart_id AND c.user_id = $2
       JOIN products p ON p.id = ci.product_id
@@ -255,20 +297,24 @@ async function updateItem(req, res) {
       return res.status(404).json({ error: 'Cart item not found' });
     }
 
-    const { product_id, stock } = rows[0];
-    if (quantity > Number(stock)) {
+    const { product_id, name, stock } = rows[0];
+    const available = Number(stock) || 0;
+    const wanted = Number(quantity);
+
+    if (wanted > available) {
       return res.status(409).json({
         error: 'Insufficient stock',
         details: {
           productId: Number(product_id),
-          requested: Number(quantity),
-          available: Number(stock),
+          productName: name,
+          requested: wanted,
+          available,
         },
       });
     }
 
     // Proceed with update via model
-    const item = await Cart.updateItemQuantity(cartItemId, userId, quantity);
+    const item = await Cart.updateItemQuantity(cartItemId, userId, wanted);
     if (!item) {
       return res.status(404).json({ error: 'Cart item not found' });
     }

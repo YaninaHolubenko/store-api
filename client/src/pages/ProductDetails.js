@@ -19,7 +19,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 export default function ProductDetails() {
   const { id } = useParams();
   const { isAuth } = useAuth();
-  const { refresh: refreshCart, add } = useCart();
+  const { items, refresh: refreshCart, add } = useCart();
 
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
@@ -83,6 +83,17 @@ export default function ProductDetails() {
     };
   }, [id]);
 
+  const alreadyInCart = useMemo(() => {
+    if (!product?.id) return 0;
+    const row = items.find((it) => Number(it.productId) === Number(product.id));
+    return Number(row?.quantity || 0);
+  }, [items, product]);
+
+  const remainingToAdd = useMemo(() => {
+    const stock = Number(product?.stock ?? 0);
+    return Math.max(0, stock - alreadyInCart);
+  }, [product, alreadyInCart]);
+
   // Map technical errors to friendly text
   function friendlyCartError(err) {
     const msg = String(err?.message || '');
@@ -98,16 +109,26 @@ export default function ProductDetails() {
     return msg || 'Could not add to cart. Please try again.';
   }
 
-  // Add to cart
+  // Add to cart with client-side guard against exceeding stock
   const onAddToCart = async () => {
     if (!product?.id) return;
     setAdding(true);
     setPageError('');
     setNotice('');
+
     try {
-      const max = Number.isFinite(product?.stock) ? Number(product.stock) : 99;
-      const q = Math.max(1, Math.min(max, Number(qty) || 1));
-      await add(product.id, q);
+      const requested = Math.max(1, Number(qty) || 1);
+
+      if (remainingToAdd <= 0) {
+        setPageError('Insufficient stock for the requested quantity.');
+        return;
+      }
+      if (requested > remainingToAdd) {
+        setPageError(`Only ${remainingToAdd} left in stock.`);
+        return;
+      }
+
+      await add(product.id, requested);
       await refreshCart();
       setNotice('Added to cart ✓');
     } catch (e) {
@@ -119,9 +140,7 @@ export default function ProductDetails() {
     }
   };
 
-  const isOutOfStock = useMemo(() => {
-    return product?.stock != null && Number(product.stock) <= 0;
-  }, [product]);
+  const isOutOfStock = useMemo(() => remainingToAdd <= 0, [remainingToAdd]);
 
   if (loading) return <div className={styles.loading}>Loading…</div>;
   if (pageError && !product) {
@@ -136,7 +155,7 @@ export default function ProductDetails() {
   }
   if (!product) return <div className={styles.notFound}>Product not found.</div>;
 
-  const price = product.price != null ? `£${product.price.toFixed(2)}` : '';
+  const price = product.price != null ? `£${Number(product.price).toFixed(2)}` : '';
   const img = product.image_url || product.image || '';
   const cat = resolveCategoryMeta(product, categories);
 
@@ -167,7 +186,7 @@ export default function ProductDetails() {
 
           {cat ? (
             <div className={styles.category}>
-              Category:{' '}
+              Category{' '}
               {cat.href ? (
                 <Link to={cat.href} className={styles.link}>
                   <strong>{cat.label}</strong>
@@ -182,7 +201,9 @@ export default function ProductDetails() {
 
           {product.stock != null ? (
             <div className={isOutOfStock ? styles.stockOut : styles.stockOk}>
-              {isOutOfStock ? 'Out of stock' : `In stock: ${product.stock}`}
+              {isOutOfStock
+                ? 'Out of stock'
+                : `In stock: ${product.stock} (available to add: ${remainingToAdd})`}
             </div>
           ) : null}
 
@@ -196,7 +217,7 @@ export default function ProductDetails() {
             <QuantitySelector
               value={qty}
               min={1}
-              max={Number.isFinite(product?.stock) ? Number(product.stock) : 99}
+              max={Math.max(1, remainingToAdd || 1)}
               onChange={setQty}
               disabled={adding || isOutOfStock}
             />

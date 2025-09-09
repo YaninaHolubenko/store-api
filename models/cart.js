@@ -41,10 +41,18 @@ async function getItemsWithProductDetails(cartId) {
 /**
  * Add an item to the cart or increase its quantity.
  * Enforces stock limit at insert/update time.
- * Throws Error with .code = 'PRODUCT_NOT_FOUND' | 'INVALID_QUANTITY' | 'INSUFFICIENT_STOCK'
+ * Throws Error with .code = 'INVALID_PRODUCT' | 'PRODUCT_NOT_FOUND' | 'INVALID_QUANTITY' | 'INSUFFICIENT_STOCK'
  */
 async function addOrUpdateItem(cartId, productId, quantity) {
+  // normalize inputs
+  const pid = Number(productId);
   const qty = Number(quantity);
+
+  if (!Number.isInteger(pid) || pid <= 0) {
+    const e = new Error('Invalid product id');
+    e.code = 'INVALID_PRODUCT';
+    throw e;
+  }
   if (!Number.isInteger(qty) || qty <= 0) {
     const e = new Error('Invalid quantity');
     e.code = 'INVALID_QUANTITY';
@@ -54,7 +62,7 @@ async function addOrUpdateItem(cartId, productId, quantity) {
   // Load product (with stock/name for better error details)
   const prod = await pool.query(
     'SELECT id, name, stock FROM products WHERE id = $1',
-    [productId]
+    [pid]
   );
   if (!prod.rows.length) {
     const e = new Error('Product not found');
@@ -62,25 +70,26 @@ async function addOrUpdateItem(cartId, productId, quantity) {
     throw e;
   }
   const product = prod.rows[0];
+  const stock = Number(product.stock) || 0;
 
   // Check if this item already exists in the cart
   const existing = await pool.query(
     'SELECT id, quantity FROM cart_items WHERE cart_id = $1 AND product_id = $2',
-    [cartId, productId]
+    [cartId, pid]
   );
 
   if (existing.rows.length) {
     const currentQty = Number(existing.rows[0].quantity) || 0;
     const newQty = currentQty + qty;
 
-    if (newQty > Number(product.stock)) {
+    if (newQty > stock) {
       const e = new Error('Insufficient stock');
       e.code = 'INSUFFICIENT_STOCK';
       e.details = {
         productId: Number(product.id),
         productName: product.name,
         requested: newQty,
-        available: Number(product.stock),
+        available: stock,
       };
       throw e;
     }
@@ -98,14 +107,14 @@ async function addOrUpdateItem(cartId, productId, quantity) {
   }
 
   // New row path
-  if (qty > Number(product.stock)) {
+  if (qty > stock) {
     const e = new Error('Insufficient stock');
     e.code = 'INSUFFICIENT_STOCK';
     e.details = {
       productId: Number(product.id),
       productName: product.name,
       requested: qty,
-      available: Number(product.stock),
+      available: stock,
     };
     throw e;
   }
@@ -116,7 +125,7 @@ async function addOrUpdateItem(cartId, productId, quantity) {
     VALUES ($1, $2, $3)
     RETURNING id AS cart_item_id, product_id, quantity
     `,
-    [cartId, productId, qty]
+    [cartId, pid, qty]
   );
   return ins.rows[0];
 }

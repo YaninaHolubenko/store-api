@@ -11,7 +11,7 @@ import { useAuth } from './AuthContext';
 
 const CartContext = createContext(null);
 
-// Normalize cart response from various backend shapes
+// ---- helpers ----
 function normalizeItems(resp) {
   const root = resp?.cart ?? resp;
   const raw = Array.isArray(root) ? root : (root?.items ?? root?.cartItems ?? []);
@@ -20,7 +20,6 @@ function normalizeItems(resp) {
   return raw.map((it) => {
     const product = it.product || it.product_info || null;
 
-    // Handle various cart item id keys
     const idRaw =
       it.id ??
       it.item_id ??
@@ -64,6 +63,25 @@ function normalizeItems(resp) {
   });
 }
 
+function formatStockError(err) {
+  // сервер отдает { error: 'Insufficient stock', details: { productId, productName?, requested, available } }
+  const d = err?.body?.details || err?.details || null;
+  if (err?.status === 409 && (err?.message?.toLowerCase?.().includes('insufficient') || err?.body?.error === 'Insufficient stock')) {
+    const name = d?.productName || (d?.productId ? `Product #${d.productId}` : 'This item');
+    const available = d?.available != null ? Number(d.available) : null;
+    if (available != null) {
+      return `${name}: only ${available} in stock.`;
+    }
+    return 'Insufficient stock for this item.';
+  }
+  // валидация
+  if (err?.status === 400) return err.message || 'Invalid request.';
+  // неавторизован
+  if (err?.status === 401 || err?.status === 403) return 'Please sign in to modify your cart.';
+  // дефолт
+  return err?.message || 'Cart action failed.';
+}
+
 export function CartProvider({ children }) {
   const { isAuth } = useAuth();
 
@@ -105,7 +123,6 @@ export function CartProvider({ children }) {
 
   // Clear cart locally (used right after successful checkout)
   function clear() {
-    // Immediately clear local state for correct UI (badge/count/total)
     setItems([]);
     setError('');
     setAuthRequired(false);
@@ -114,20 +131,28 @@ export function CartProvider({ children }) {
   // Add product to cart
   async function add(productId, quantity = 1) {
     if (!isAuth) {
+      setError('Please sign in to add items to your cart.');
       const err = new Error('Please sign in to add items to your cart.');
       err.status = 401;
-      throw err;
+      return false;
     }
-    await apiAddToCart(Number(productId), Number(quantity));
-    await refresh();
+    try {
+      await apiAddToCart(Number(productId), Number(quantity));
+      await refresh();
+      return true;
+    } catch (e) {
+      setError(formatStockError(e));
+      return false;
+    }
   }
 
   // Remove cart item (optimistic)
   async function remove(itemId) {
     if (!isAuth) {
+      setError('Please sign in to modify your cart.');
       const err = new Error('Please sign in to modify your cart.');
       err.status = 401;
-      throw err;
+      return false;
     }
 
     const prev = items; // snapshot for rollback
@@ -135,18 +160,21 @@ export function CartProvider({ children }) {
 
     try {
       await apiRemoveCartItem(itemId);
+      return true;
     } catch (e) {
       setItems(prev); // rollback on failure
-      throw e;
+      setError(e?.message || 'Failed to remove item.');
+      return false;
     }
   }
 
   // Update quantity (optimistic)
   async function update(itemId, quantity) {
     if (!isAuth) {
+      setError('Please sign in to modify your cart.');
       const err = new Error('Please sign in to modify your cart.');
       err.status = 401;
-      throw err;
+      return false;
     }
 
     const q = Math.max(1, Number(quantity) || 1); // ensure positive integer
@@ -161,9 +189,11 @@ export function CartProvider({ children }) {
     try {
       // apiUpdateCartItem should post { quantity: q }
       await apiUpdateCartItem(itemId, q);
+      return true;
     } catch (e) {
       setItems(prev); // rollback on failure
-      throw e;
+      setError(formatStockError(e));
+      return false;
     }
   }
 
@@ -188,7 +218,7 @@ export function CartProvider({ children }) {
     error,
     authRequired,
     refresh,
-    clear,     // <-- exposed
+    clear,
     add,
     remove,
     update,
