@@ -88,8 +88,15 @@ export async function register({ username, email, password }) {
   return data;
 }
 
-export function logout() {
-  clearToken();
+export async function logout() {
+  // Call server to terminate session (Google OAuth), then clear local JWT
+  try {
+    await fetchJSON('/auth/logout', { method: 'POST' });
+  } catch (_) {
+    // ignore errors to ensure client state is cleared anyway
+  } finally {
+    clearToken();
+  }
 }
 
 // ---- Product endpoints ----

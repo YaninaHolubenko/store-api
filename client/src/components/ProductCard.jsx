@@ -21,7 +21,10 @@ export default function ProductCard({ product, category }) {
           src={img}
           alt={product.name}
           className={styles.img}
-          loading="lazy"
+          loading="lazy"            // keep lazy loading
+          decoding="async"          // hint browser to decode off main thread
+          width={600}               // reserve space to reduce layout shift
+          height={400}              // keep same ratio as fallback SVG
           referrerPolicy="no-referrer"
           fallback={
             'data:image/svg+xml;utf8,' +
