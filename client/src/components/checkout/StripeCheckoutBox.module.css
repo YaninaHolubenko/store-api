@@ -1,0 +1,19 @@
+/* client\src\components\checkout\StripeCheckoutBox.module.css */
+.box {
+  display: grid;
+  gap: 12px;
+}
+
+.loading {
+  color: #6b7280;
+}
+
+.error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.hint {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}

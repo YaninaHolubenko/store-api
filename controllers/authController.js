@@ -4,81 +4,111 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
 /**
- * Register a new user
+ * Register a new user and auto-login via Passport session.
+ * Returns a session cookie (server-side) and also a JWT (transitional).
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} [next]
  */
-async function register(req, res) {
+async function register(req, res, next) {
   try {
     const { username, email, password } = req.body;
-    // Validate input fields
+
+    // Basic presence validation
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    // Check if username or email is already taken
+
+    // Ensure username/email are unique
     const existingUser = await User.findByUsernameOrEmail(username, email);
     if (existingUser) {
       return res.status(400).json({ error: 'Username or email taken' });
     }
-    // Hash the password
+
+    // Hash password (salt rounds from env)
     const passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS));
-    // Create user in the database
+
+    // Persist new user
     const newUser = await User.create({ username, email, passwordHash });
 
-    // Sign JWT token
+    // Build safe user payload for responses/sessions
+    const safeUser = { id: newUser.id, username: newUser.username, email: newUser.email, role: newUser.role };
+
+    // Issue JWT (transitional, while client migrates to session-only)
     const token = jwt.sign(
-      { id: newUser.id },
+      { id: newUser.id, email: newUser.email, role: newUser.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '2h' } // was '1h'
     );
-    // Return created user (without password) and token
-    res.status(201).json({
-      user: { id: newUser.id, username: newUser.username, email: newUser.email },
-      token
-    });
+
+    // If Passport is mounted, create a server-side session immediately
+    if (typeof req.login === 'function') {
+      req.login(safeUser, (err) => {
+        if (err) {
+          if (next) return next(err);
+          return res.status(500).json({ error: 'Server error' });
+        }
+        return res.status(201).json({ user: safeUser, token });
+      });
+      return;
+    }
+
+    // Fallback (if passport not mounted)
+    return res.status(201).json({ user: safeUser, token });
   } catch (error) {
     console.error(error);
-    // Handle race condition: unique violation despite pre-check
     if (error && error.code === '23505') {
       return res.status(409).json({ error: 'Username or email taken' });
     }
-    res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error' });
   }
 }
 
 /**
- * Authenticate user credentials and issue JWT
+ * Legacy JWT login (kept for backward compatibility).
+ * Note: The /auth/login route now uses Passport Local to create a session.
+ * This handler remains for any places still calling it directly.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
 async function login(req, res) {
   try {
     const { username, password } = req.body;
-    // Validate credentials presence
+
+    // Validate presence
     if (!username || !password) {
       return res.status(401).json({ error: 'Missing credentials' });
     }
-    // Retrieve user by username or email
+
+    // Retrieve by username OR email (identifier used twice intentionally)
     const user = await User.findByUsernameOrEmail(username, username);
     if (!user) {
       return res.status(403).json({ error: 'Invalid credentials' });
     }
-    // Compare provided password with stored hash
-    const isMatch = await bcrypt.compare(password, user.password_hash);
+
+    // Select the correct hash column (supporting common names)
+    const hash = user.password_hash || user.password_digest || user.password;
+    if (!hash) {
+      return res.status(403).json({ error: 'Invalid credentials' });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, hash);
     if (!isMatch) {
       return res.status(403).json({ error: 'Invalid credentials' });
     }
-    // Sign JWT token
+
+    // Issue JWT (legacy)
     const token = jwt.sign(
-      { id: user.id },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '2h' } // was '1h'
     );
-    // Return token
-    res.json({ token });
+
+    return res.json({ token });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error' });
   }
 }
 

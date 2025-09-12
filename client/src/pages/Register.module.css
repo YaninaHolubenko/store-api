@@ -1,0 +1,51 @@
+/* client\src\pages\Register.module.css */
+.container {
+  max-width: 420px;
+  width: 100%;
+  margin: 2rem auto 0;
+}
+
+.title {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.labelBlock {
+  display: block;
+}
+
+.labelText {
+  margin-bottom: 4px;
+}
+
+.input {
+  width: 100%;
+  height: 44px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-size: 16px;
+  outline: none;
+}
+
+.fullButton {
+  width: 100%;
+  height: 44px;
+}
+
+.loginRow {
+  margin-top: 12px;
+}
+
+/* Horizontal divider “OR” */
+.orRow {
+  margin: 16px 0;
+  height: 1px;
+  background: #eee;
+}

@@ -4,9 +4,8 @@ const { validationResult } = require('express-validator');
 const router = express.Router();
 const productController = require('../controllers/productController');
 
-// Auth & role guards (project uses CommonJS + these paths)
-const authenticateToken = require('../middlewares/auth');      // verifies JWT, sets req.user.id
-const checkAdmin = require('../middlewares/checkAdmin');       // ensures req.user.role === 'admin'
+const authHybrid = require('../middlewares/authHybrid');
+const checkAdmin = require('../middlewares/checkAdmin');
 
 const {
   createProductRules,
@@ -28,6 +27,7 @@ const validate = (req, res, next) => {
  *     summary: Retrieve a list of products (optionally filtered by category)
  *     tags:
  *       - Products
+ *     security: []  # public
  *     parameters:
  *       - in: query
  *         name: categoryId
@@ -36,7 +36,7 @@ const validate = (req, res, next) => {
  *           type: integer
  *         description: If provided, returns only products with this category id
  *     responses:
- *       '200':
+ *       200:
  *         description: An array of product objects
  *         content:
  *           application/json:
@@ -44,12 +44,8 @@ const validate = (req, res, next) => {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Product'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // GET /products - public
 router.get('/', productController.list);
@@ -61,32 +57,22 @@ router.get('/', productController.list);
  *     summary: Retrieve a single product by ID
  *     tags:
  *       - Products
+ *     security: []  # public
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the product to retrieve
+ *       - $ref: '#/components/parameters/PathId'
  *     responses:
- *       '200':
+ *       200:
  *         description: Product object
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
- *       '404':
- *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // GET /products/:id - public
 router.get('/:id', idParamRule, validate, productController.getOne);
@@ -107,41 +93,25 @@ router.get('/:id', idParamRule, validate, productController.getOne);
  *           schema:
  *             $ref: '#/components/schemas/ProductInput'
  *     responses:
- *       '201':
+ *       201:
  *         description: Product created successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
- *       '400':
- *         description: Invalid input
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // POST /products - admin only
 router.post(
   '/',
-  authenticateToken,
+  authHybrid,          // use hybrid guard (session OR JWT)
   checkAdmin,
   createProductRules,
   validate,
@@ -158,12 +128,7 @@ router.post(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the product to update
+ *       - $ref: '#/components/parameters/PathId'
  *     requestBody:
  *       required: true
  *       content:
@@ -171,49 +136,30 @@ router.post(
  *           schema:
  *             $ref: '#/components/schemas/ProductInput'
  *     responses:
- *       '200':
+ *       200:
  *         description: Product updated successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
- *       '400':
- *         description: Invalid input
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // PUT /products/:id - admin only
 router.put(
   '/:id',
-  authenticateToken,
+  authHybrid,          // hybrid guard (session OR JWT)
   checkAdmin,
-  [...idParamRule, ...updateProductRules],
+  idParamRule,
+  updateProductRules,
   validate,
   productController.update
 );
@@ -228,51 +174,29 @@ router.put(
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the product to delete
+ *       - $ref: '#/components/parameters/PathId'
  *     responses:
- *       '204':
+ *       204:
  *         description: Product deleted successfully
- *       '401':
- *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '409':
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
  *         description: Conflict (product is referenced by carts or orders)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
-
 // DELETE /products/:id - admin only
 router.delete(
   '/:id',
-  authenticateToken,
+  authHybrid,          // hybrid guard (session OR JWT)
   checkAdmin,
   idParamRule,
   validate,

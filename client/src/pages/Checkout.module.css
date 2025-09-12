@@ -1,0 +1,35 @@
+/* client/src/pages/Checkout.module.css */
+.header {
+  margin: 12px 0;
+}
+
+.title {
+  margin: 12px 0 20px;
+}
+
+.loading {
+  padding: 16px 0;
+}
+
+.empty {
+  margin-top: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.paymentCol {
+  display: grid;
+  gap: 12px;
+}
+
+/* Simple responsive split for larger screens */
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: start;
+  }
+}

@@ -1,0 +1,59 @@
+/* client\src\components\CategoriesList.module.css */
+.wrapper {
+  border-right: 1px solid #eee;
+  padding-right: 12px;
+}
+
+.toggle {
+  display: none;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  margin-bottom: 8px;
+}
+
+.chev { float: right; }
+
+.list {
+  display: grid;
+  gap: 6px;
+}
+
+.item {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.item:hover {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+  transform: scale(1.02);
+}
+
+.active {
+  border: 2px solid #111;
+  background: #111;
+  color: #fff;
+}
+
+@media (max-width: 899.98px) {
+  .wrapper {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .toggle { display: block; }
+
+  .list { display: none; margin-bottom: 12px; }
+  .listOpen { display: grid; }
+}

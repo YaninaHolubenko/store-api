@@ -1,0 +1,77 @@
+/* client/src/pages/Cart.module.css */
+.header {
+  margin: 12px 0 8px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 6px 0 18px;
+}
+
+.loading {
+  padding: 24px 0;
+  color: #6b7280; 
+  text-align: center;
+}
+
+/* Auth required block */
+.authActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* General link look used across the page */
+.link {
+  color: #2563eb; 
+  text-decoration: none;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Empty-state text */
+.empty {
+  color: #6b7280; 
+  margin: 12px 0 18px;
+}
+
+/* Items list */
+.list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Totals row */
+.totals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb; 
+}
+
+.itemsCount,
+.subtotal {
+  font-size: 1rem;
+}
+
+.subtotal strong {
+  font-size: 1.05rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .authActions {
+    flex-direction: column;
+  }
+
+  .totals {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}

@@ -1,0 +1,118 @@
+/* client\src\components\Header.module.css */
+.nav {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+}
+
+/* Brand link */
+.brand {
+  text-decoration: none;
+  color: #111;
+  font-weight: 700;
+}
+
+/* Right side */
+.right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Desktop links */
+.links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Cart icon link */
+.cartLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #111;
+}
+
+/* Badge */
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.muted { opacity: 0.8; }
+
+.logoutBtn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #222;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
+.roleBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 6px;
+  border-radius: 9999px;
+  background: #111827;  
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+/* Hamburger (mobile) */
+.hamburger {
+  display: none;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Mobile dropdown menu */
+.menu {
+  position: absolute;
+  right: 12px;
+  top: 60px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+  min-width: 180px;
+  z-index: 50;
+}
+
+/* Adaptive */
+@media (max-width: 640px) {
+  .links { display: none; }
+  .hamburger { display: inline-flex; }
+}

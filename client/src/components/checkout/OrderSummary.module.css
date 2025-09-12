@@ -1,0 +1,22 @@
+/* client/src/components/checkout/OrderSummary.module.css */
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+.title {
+  margin-bottom: 10px;
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.line:last-child {
+  border-bottom: none;
+}

@@ -1,0 +1,41 @@
+/* client\src\pages\admin\AdminHome.module.css*/
+.title {
+  margin: 8px 0 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: block;
+  padding: 16px;
+  border: 1px solid #e7e7e7;
+  border-radius: 12px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  transform: translateY(-1px);
+}
+
+.cardTitle {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.cardDesc {
+  color: #6b7280; 
+  font-size: 0.95rem;
+}
+
+/* mobile */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; }
+}

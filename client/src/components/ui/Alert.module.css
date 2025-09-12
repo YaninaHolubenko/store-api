@@ -1,0 +1,37 @@
+/* \client\src\components\ui\Alert.module.css */
+.alert {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 12px 0;
+}
+
+/* Variants */
+.info {
+  background: #eef6ff;
+  color: #0b3d76;
+  border-color: #cfe5ff;
+}
+
+.success {
+  background: #e8fff1;
+  color: #035e2b;
+  border-color: #c9f3d9;
+}
+
+.warning {
+  background: #fff7e6;
+  color: #6a3d00;
+  border-color: #ffd9a6;
+}
+
+.error {
+  background: #ffe6e6;
+  color: #a40000;
+  border-color: #ffcccc;
+}
+
+.title {
+  font-weight: 700;
+  margin-right: 6px;
+}

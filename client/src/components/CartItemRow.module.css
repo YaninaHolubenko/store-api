@@ -1,0 +1,112 @@
+/* client\src\components\CartItemRow.module.css */
+.row {
+  display: grid;
+  grid-template-columns: 100px 1fr 120px 140px 140px;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.image {
+  width: 100px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.noImage {
+  width: 100px;
+  height: 80px;
+  background: #f4f4f4;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: #888;
+}
+
+/* Make image/name look clickable when they are links */
+.thumbLink,
+.nameLink {
+  text-decoration: none;
+}
+.thumbLink:hover .image {
+  opacity: 0.92;
+}
+.nameLink .name {
+  color: inherit;
+}
+.nameLink:hover .name {
+  text-decoration: underline;
+}
+
+.info { }
+.name { font-weight: 600; }
+.meta { font-size: 12px; opacity: .7; }
+
+.price { }
+
+/* --- Quantity controls --- */
+.qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.qty button {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  background: #fafafa;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.qty button:hover {
+  background: #f0f0f0;
+}
+.qty input {
+  width: 50px;
+  text-align: center;
+  padding: 4px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.totalAndAction {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.lineTotal { font-weight: 700; }
+
+.remove {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #dc2626; 
+  background: #fff;
+  color: #dc2626;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.remove:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* Mobile: collapse to 2 columns */
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 100px 1fr;
+  }
+  .price, .qty, .totalAndAction {
+    justify-self: end;
+  }
+  .totalAndAction {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+}

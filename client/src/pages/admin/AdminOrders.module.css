@@ -1,0 +1,157 @@
+/* client\src\pages\admin\AdminOrders.module.css */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;             
+}
+
+.filterLbl {
+  display: inline-flex;          
+  align-items: center;
+  gap: 8px;                      
+  font-size: 0.95rem;
+}
+
+.select {
+  padding: 6px 10px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* helper texts */
+.info {
+  padding: 10px 0;
+  color: #6b7280; 
+}
+
+.error {
+  padding: 10px 12px;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.table {
+  display: grid;
+  gap: 8px;
+}
+
+.tr {
+  display: grid;
+  grid-template-columns: 90px 1.2fr 1fr 120px 160px 110px;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e7e7e7;
+  border-radius: 12px;
+}
+
+.thead {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  font-weight: 600;
+}
+
+.th, .td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub { font-size: 0.9rem; color: #6b7280; }
+
+/* buttons */
+.saveBtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+.saveBtn[disabled] {
+  opacity: .5;
+  cursor: default;
+}
+
+.input {
+  margin-left: 8px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-width: 220px;
+  font: inherit;
+  background: #fff;
+}
+
+/* medium screens */
+@media (max-width: 900px) {
+  .tr { grid-template-columns: 70px 1fr 1fr 110px 150px 90px; }
+}
+
+/* mobile: switch to card layout; keep user visible; move Save under status */
+@media (max-width: 700px) {
+  /* Stack page header & filters more nicely */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Hide table header row; cards will have their own layout */
+  .thead { display: none; }
+
+  /* Turn each row into a 2-col card with defined areas:
+     id  | total
+     user user
+     status | action
+  */
+  .tr {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "id total"
+      "user user"
+      "status action";
+    row-gap: 10px;
+  }
+
+  /* 1: Order id */
+  .tr > :nth-child(1) { grid-area: id; font-weight: 600; }
+
+  /* 2: User (always visible on mobile) */
+  .tr > :nth-child(2) {
+    grid-area: user;
+    white-space: normal;          
+  }
+
+  /* 3: Created — hide on small screens */
+  .tr > :nth-child(3) { display: none; }
+
+  /* 4: Total — align to right */
+  .tr > :nth-child(4) {
+    grid-area: total;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  /* 5: Status select */
+  .tr > :nth-child(5) { grid-area: status; }
+
+  /* 6: Save button — to the right, same row with status */
+  .tr > :nth-child(6) {
+    grid-area: action;
+    justify-self: end;
+  }
+}

@@ -4,9 +4,9 @@ const { param, body } = require('express-validator');
 // Allowed order statuses
 const VALID_STATUSES = ['pending', 'shipped', 'delivered', 'cancelled'];
 
-/**
- * Validate :id path parameter (positive integer)
- */
+/*
+  Validate :id path parameter (positive integer)
+*/
 const idParamRule = [
   param('id')
     .exists().withMessage('order id is required')
@@ -14,9 +14,9 @@ const idParamRule = [
     .isInt({ min: 1 }).withMessage('order id must be a positive integer'),
 ];
 
-/**
- * Validate body for PATCH /orders/:id
- */
+/*
+  Validate body for PATCH /orders/:id
+*/
 const updateStatusRules = [
   ...idParamRule,
   body('status')

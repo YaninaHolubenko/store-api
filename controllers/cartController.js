@@ -1,32 +1,74 @@
 // controllers/cartController.js
 const Cart = require('../models/cart');
-const pool = require('../db/index'); // DB pool (ensure this path matches your project)
+const pool = require('../db/index');
+
+// Feature flag: allow enabling legacy checkout flow if needed (default: off)
+const ENABLE_LEGACY_CHECKOUT =
+  String(process.env.LEGACY_CHECKOUT_ENABLED || '').toLowerCase() === 'true';
+
+/**
+ * Resolve integer local user id for both JWT and Google session.
+ * - If req.user.id is already an integer -> use it.
+ * - Else try to find by req.user.email in users table.
+ * - If not found -> 401 with clear message.
+ */
+async function resolveLocalUserId(req) {
+  const raw = req.user?.id;
+
+  // local JWT login usually sets numeric id
+  if (Number.isInteger(raw)) return raw;
+
+  // some JWTs may pass string numbers
+  if (typeof raw === 'string' && /^\d+$/.test(raw)) {
+    const n = Number(raw);
+    if (Number.isSafeInteger(n)) return n;
+  }
+
+  const email = req.user?.email;
+  if (!email) {
+    const e = new Error('No email in session');
+    e.status = 401;
+    throw e;
+  }
+
+  const r = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (!r.rows.length) {
+    const e = new Error(
+      'Account for this Google email is not linked. Please register once with the same email.'
+    );
+    e.status = 401;
+    throw e;
+  }
+  return r.rows[0].id;
+}
 
 /**
  * Retrieve or create current user's cart
  */
 async function getCart(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
     const cart = await Cart.findOrCreateByUser(userId);
     const items = await Cart.getItemsWithProductDetails(cart.id);
     res.json({ cartId: cart.id, items });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || 'Server error' });
   }
 }
 
 /**
  * Add product to cart or update quantity (route: POST /cart/items)
- * Finds/creates cart for current user; validates product & stock; upserts quantity.
+ * — server-side stock check before insert/update
  */
 async function addItem(req, res) {
   try {
-    const userId = req.user.id;
-    const { productId, quantity } = req.body;
+    const userId = await resolveLocalUserId(req);
+    // Coerce payload to integers to match validators behavior
+    const productId = parseInt(req.body.productId, 10);
+    const quantity = parseInt(req.body.quantity, 10);
 
-    // basic validation
     if (!Number.isInteger(productId) || productId <= 0) {
       return res.status(400).json({ error: 'Invalid product id' });
     }
@@ -34,11 +76,10 @@ async function addItem(req, res) {
       return res.status(400).json({ error: 'Quantity must be positive integer' });
     }
 
-    // 1) ensure cart exists for this user
     const cart = await Cart.findOrCreateByUser(userId);
     const cartId = cart.id;
 
-    // 2) check product & stock
+    // Load product & stock
     const productRes = await pool.query(
       'SELECT id, name, stock FROM products WHERE id = $1',
       [productId]
@@ -48,68 +89,71 @@ async function addItem(req, res) {
     }
     const product = productRes.rows[0];
 
-    // 3) existing cart item?
+    // Check if already in cart
     const existingRes = await pool.query(
       'SELECT id, quantity FROM cart_items WHERE cart_id = $1 AND product_id = $2',
       [cartId, productId]
     );
 
     if (existingRes.rows.length > 0) {
-      const newQty = existingRes.rows[0].quantity + quantity;
-      if (newQty > product.stock) {
+      const newQty = Number(existingRes.rows[0].quantity) + Number(quantity);
+      if (newQty > Number(product.stock)) {
         return res.status(409).json({
           error: 'Insufficient stock',
           details: {
             productId: product.id,
             productName: product.name,
             requested: newQty,
-            available: product.stock
-          }
+            available: Number(product.stock),
+          },
         });
       }
 
-      await pool.query(
-        'UPDATE cart_items SET quantity = $1 WHERE id = $2',
-        [newQty, existingRes.rows[0].id]
-      );
+      await pool.query('UPDATE cart_items SET quantity = $1 WHERE id = $2', [
+        newQty,
+        existingRes.rows[0].id,
+      ]);
 
       return res.status(201).json({
         message: 'Item added to cart',
-        item: { id: existingRes.rows[0].id, productId: product.id, quantity: newQty }
-      });
-    } else {
-      if (quantity > product.stock) {
-        return res.status(409).json({
-          error: 'Insufficient stock',
-          details: {
-            productId: product.id,
-            productName: product.name,
-            requested: quantity,
-            available: product.stock
-          }
-        });
-      }
-
-      const insItem = await pool.query(
-        'INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id',
-        [cartId, productId, quantity]
-      );
-
-      return res.status(201).json({
-        message: 'Item added to cart',
-        item: { id: insItem.rows[0].id, productId: product.id, quantity }
+        item: { id: existingRes.rows[0].id, productId: product.id, quantity: newQty },
       });
     }
+
+    // Insert new row
+    if (Number(quantity) > Number(product.stock)) {
+      return res.status(409).json({
+        error: 'Insufficient stock',
+        details: {
+          productId: product.id,
+          productName: product.name,
+          requested: Number(quantity),
+          available: Number(product.stock),
+        },
+      });
+    }
+
+    const insItem = await pool.query(
+      'INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id',
+      [cartId, productId, quantity]
+    );
+
+    return res.status(201).json({
+      message: 'Item added to cart',
+      item: { id: insItem.rows[0].id, productId: product.id, quantity: Number(quantity) },
+    });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Server error' });
+    const status = err.status || 500;
+    return res.status(status).json({ error: err.message || 'Server error' });
   }
 }
 
 /**
- * Checkout cart into order (route: POST /cart/:cartId/checkout)
+ * Legacy transactional checkout (original implementation kept under a feature flag).
+ * NOTE: This code is preserved for optional fallback/testing and matches the previous logic.
  */
-async function checkout(req, res) {
+async function legacyCheckoutTransactional(req, res) {
   const client = await pool.connect();
   try {
     const cartId = Number(req.params.cartId);
@@ -119,7 +163,7 @@ async function checkout(req, res) {
 
     await client.query('BEGIN');
 
-    // 1) lock items+products
+    // Lock items and check stock
     const itemsRes = await client.query(
       `
       SELECT ci.product_id, ci.quantity, p.name, p.stock
@@ -136,32 +180,32 @@ async function checkout(req, res) {
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
-    // 2) validate stock
     for (const it of items) {
-      if (it.quantity > it.stock) {
+      if (Number(it.quantity) > Number(it.stock)) {
         await client.query('ROLLBACK');
         return res.status(409).json({
           error: 'Insufficient stock',
           details: {
             productId: it.product_id,
             productName: it.name,
-            requested: it.quantity,
-            available: it.stock
-          }
+            requested: Number(it.quantity),
+            available: Number(it.stock),
+          },
         });
       }
     }
 
-    // 3) decrement stock
+    // Decrement stock
     for (const it of items) {
-      await client.query(
-        `UPDATE products SET stock = stock - $1 WHERE id = $2`,
-        [it.quantity, it.product_id]
-      );
+      await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [
+        it.quantity,
+        it.product_id,
+      ]);
     }
 
-    // 4) create order + calc total
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
+
+    // Prices for total
     const pricesRes = await client.query(
       `
       SELECT ci.product_id, ci.quantity, p.price
@@ -177,6 +221,7 @@ async function checkout(req, res) {
       total += Number(r.price) * Number(r.quantity);
     }
 
+    // Create order
     const orderRes = await client.query(
       `INSERT INTO orders (user_id, status, total_amount)
        VALUES ($1, 'pending', $2)
@@ -185,7 +230,7 @@ async function checkout(req, res) {
     );
     const order = orderRes.rows[0];
 
-    // 5) order_items from cart snapshot
+    // Insert order items
     for (const r of pricesRes.rows) {
       await client.query(
         `INSERT INTO order_items (order_id, product_id, quantity, price)
@@ -194,41 +239,92 @@ async function checkout(req, res) {
       );
     }
 
-    // 6) clear cart
+    // Clear the cart
     await client.query(`DELETE FROM cart_items WHERE cart_id = $1`, [cartId]);
 
     await client.query('COMMIT');
     return res.status(201).json({ order, message: 'Order placed and stock updated' });
   } catch (err) {
     console.error(err);
-    try { await client.query('ROLLBACK'); } catch (_) {}
-    return res.status(500).json({ error: 'Server error' });
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    return res.status(err.status || 500).json({ error: err.message || 'Server error' });
   } finally {
     client.release();
   }
 }
 
 /**
- * Update quantity of a cart item
+ * Checkout cart into order (route: POST /cart/:cartId/checkout)
+ * Default behavior: return 410 (deprecated). If LEGACY_CHECKOUT_ENABLED=true, run legacy flow.
+ */
+async function checkout(req, res) {
+  if (!ENABLE_LEGACY_CHECKOUT) {
+    return res.status(410).json({
+      error:
+        'This endpoint is deprecated. Use /payments/create-intent then /orders/complete.',
+    });
+  }
+  // Fallback to legacy behavior if explicitly enabled
+  return legacyCheckoutTransactional(req, res);
+}
+
+/**
+ * Update quantity of a cart item (enforces stock before update)
  */
 async function updateItem(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
     const cartItemId = parseInt(req.params.id, 10);
-    const { quantity } = req.body;
+    // Coerce to integer to align with validator
+    const quantity = parseInt(req.body.quantity, 10);
 
     if (!Number.isInteger(quantity) || quantity <= 0) {
       return res.status(400).json({ error: 'Invalid quantity' });
     }
 
-    const item = await Cart.updateItemQuantity(cartItemId, userId, quantity);
+    // Load product and stock for this cart item owned by the user
+    const { rows } = await pool.query(
+      `
+      SELECT ci.id, ci.quantity AS current_qty, ci.product_id, p.name, p.stock
+      FROM cart_items ci
+      JOIN carts c ON c.id = ci.cart_id AND c.user_id = $2
+      JOIN products p ON p.id = ci.product_id
+      WHERE ci.id = $1
+      `,
+      [cartItemId, userId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Cart item not found' });
+    }
+
+    const { product_id, name, stock } = rows[0];
+    const available = Number(stock) || 0;
+    const wanted = Number(quantity);
+
+    if (wanted > available) {
+      return res.status(409).json({
+        error: 'Insufficient stock',
+        details: {
+          productId: Number(product_id),
+          productName: name,
+          requested: wanted,
+          available,
+        },
+      });
+    }
+
+    // Proceed with update via model
+    const item = await Cart.updateItemQuantity(cartItemId, userId, wanted);
     if (!item) {
       return res.status(404).json({ error: 'Cart item not found' });
     }
     res.json({ item });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(err.status || 500).json({ error: err.message || 'Server error' });
   }
 }
 
@@ -237,7 +333,7 @@ async function updateItem(req, res) {
  */
 async function removeItem(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = await resolveLocalUserId(req);
     const cartItemId = parseInt(req.params.id, 10);
     const success = await Cart.removeItem(cartItemId, userId);
     if (!success) {
@@ -246,7 +342,7 @@ async function removeItem(req, res) {
     res.json({ message: 'Cart item removed' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(err.status || 500).json({ error: err.message || 'Server error' });
   }
 }
 

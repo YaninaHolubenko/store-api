@@ -1,9 +1,12 @@
 // validators/user.js
 const { body, param } = require('express-validator');
 
-/**
- * Validation rules for updating user profile (PUT /users)
- */
+/*
+  Validation rules for updating user profile (PUT/PATCH /users)
+  - Supports username/email updates
+  - Supports password change via currentPassword/newPassword/newPasswordConfirm
+  - Backward compatibility: accepts legacy `password` as "newPassword"
+*/
 const updateProfileRules = [
   // username: optional, 3–30 chars, English letters, numbers, underscore
   body('username')
@@ -22,23 +25,44 @@ const updateProfileRules = [
     .trim()
     .normalizeEmail(),
 
-  /**
-   * password: optional, 8–100 chars, at least one lowercase, one uppercase,
-   * one digit and one special char from !@#$%^&*_
-   */
+  // legacy "password" (treat as newPassword for backward compatibility)
   body('password')
     .optional()
     .isLength({ min: 8, max: 100 }).withMessage('password must be between 8 and 100 characters')
     .bail()
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]+$/)
-      .withMessage(
-        'password must include lowercase, uppercase, digit and one special character from !@#$%^&*_'
-      ),
+    .withMessage('password must include lowercase, uppercase, digit and one special character from !@#$%^&*_'),
+
+  // password change bundle (preferred fields)
+  body('currentPassword')
+    .optional()
+    .isString()
+    .isLength({ min: 6 }).withMessage('currentPassword must be at least 6 characters'),
+
+  body('newPassword')
+    .optional()
+    .isLength({ min: 8, max: 100 }).withMessage('newPassword must be between 8 and 100 characters')
+    .bail()
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_])[A-Za-z\d!@#$%^&*_]+$/)
+    .withMessage('newPassword must include lowercase, uppercase, digit and one special character from !@#$%^&*_'),
+
+  body('newPasswordConfirm')
+    .optional()
+    .custom((value, { req }) => {
+      // If either field is provided, enforce equality
+      const hasNew = typeof req.body.newPassword === 'string' && req.body.newPassword.length > 0;
+      const hasConfirm = typeof value === 'string' && value.length > 0;
+      if (hasNew || hasConfirm) {
+        return value === req.body.newPassword;
+      }
+      return true;
+    })
+    .withMessage('Passwords do not match'),
 ];
 
-/**
- * Validation rule for path param :id
- */
+/*
+  Validation rule for path param :id
+*/
 const idParamRule = [
   param('id')
     .exists().withMessage('user id is required')

@@ -1,12 +1,12 @@
 // models/user.js
 const pool = require('../db/index');
 
-/**
- * Find a user by username or email
- * @param {string} username
- * @param {string} email
- * @returns {Promise<object|null>}
- */
+/*
+  Find a user by username or email
+  @param {string} username
+  @param {string} email
+  @returns {Promise<object|null>} 
+*/
 async function findByUsernameOrEmail(username, email) {
   const result = await pool.query(
     'SELECT id, username, email, password_hash FROM users WHERE username = $1 OR email = $2',
@@ -15,11 +15,11 @@ async function findByUsernameOrEmail(username, email) {
   return result.rows[0] || null;
 }
 
-/**
- * Create a new user record
- * @param {{username: string, email: string, passwordHash: string}} data
- * @returns {Promise<object>}
- */
+/*
+  Create a new user record
+  @param {{username: string, email: string, passwordHash: string}} data
+  @returns {Promise<object>}
+*/
 async function create({ username, email, passwordHash }) {
   const result = await pool.query(
     'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email',
@@ -28,9 +28,9 @@ async function create({ username, email, passwordHash }) {
   return result.rows[0];
 }
 
-/**
- * Find a user by ID
- */
+/*
+  Find a user by ID
+*/
 async function findById(id) {
   const res = await pool.query(
     'SELECT id, username, email FROM users WHERE id = $1',
@@ -48,9 +48,9 @@ async function findByIdWithRole(id) {
   return res.rows[0] || null;
 }
 
-/**
- * Update a user by ID
- */
+/*
+  Update a user by ID
+*/
 async function updateById(id, { username, email, passwordHash }) {
   const res = await pool.query(
     `UPDATE users SET
@@ -64,11 +64,59 @@ async function updateById(id, { username, email, passwordHash }) {
   return res.rows[0] || null;
 }
 
-/**
- * Delete a user by ID 
- */
+/*
+ Delete a user by ID 
+*/
 async function deleteById(id) {
   await pool.query('DELETE FROM users WHERE id = $1', [id]);
+}
+
+/*
+ List users with optional search and pagination (admin-safe fields only).
+*/
+async function list({ search = null, limit = 20, offset = 0 } = {}) {
+  const values = [];
+  let idx = 1;
+  let whereClause = '';
+
+  // optional search across username OR email
+  if (search) {
+    whereClause = `WHERE (username ILIKE $${idx} OR email ILIKE $${idx})`;
+    values.push(`%${search}%`);
+    idx += 1;
+  }
+
+  // numbered placeholders for limit/offset
+  const limitPos = idx; values.push(Number(limit)); idx += 1;
+  const offsetPos = idx; values.push(Number(offset));
+
+  const sql = `
+    SELECT id, username, email, role, created_at
+    FROM users
+    ${whereClause}
+    ORDER BY created_at DESC
+    LIMIT $${limitPos} OFFSET $${offsetPos}
+  `;
+
+  const res = await pool.query(sql, values);
+  return res.rows || [];
+}
+
+/*
+  Count users (for pagination), same optional search as in list().
+*/
+async function count({ search = null } = {}) {
+  const values = [];
+  let whereClause = '';
+
+  if (search) {
+    whereClause = `WHERE (username ILIKE $1 OR email ILIKE $1)`;
+    values.push(`%${search}%`);
+  }
+
+  const sql = `SELECT COUNT(*)::int AS count FROM users ${whereClause}`;
+  const res = await pool.query(sql, values);
+  return res.rows[0]?.count ?? 0;
 }
 
 module.exports = {
@@ -77,5 +125,7 @@ module.exports = {
   findByIdWithRole,
   create,
   updateById,
-  deleteById
+  deleteById,
+  list,
+  count,
 };

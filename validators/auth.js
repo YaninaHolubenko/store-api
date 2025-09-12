@@ -1,9 +1,7 @@
 // validators/auth.js
 const { body } = require('express-validator');
 
-/**
- * Validation rules for POST /register
- */
+/* Validation rules for POST /register */
 const registerRules = [
     // username: required, 3–30 chars, only English letters, numbers, underscore, no spaces
     body('username')
@@ -26,10 +24,10 @@ const registerRules = [
         .trim()
         .normalizeEmail(),
 
-    /**
-     * password: required, 8–100 chars, at least one lowercase, one uppercase,
-     * one digit and one special char from !@#$%^&*
-     */
+    /*
+      password: required, 8–100 chars, at least one lowercase, one uppercase,
+      one digit and one special char from !@#$%^&*
+    */
     body('password')
         .exists().withMessage('password is required')
         .bail()
@@ -43,9 +41,9 @@ const registerRules = [
         ),
 ];
 
-/**
- * Validation rules for POST /login
- */
+/*
+  Validation rules for POST /login
+*/
 const loginRules = [
     // username: required, trimmed
     body('username')

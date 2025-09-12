@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 
 const categoryController = require('../controllers/categoryController');
-const authenticateToken = require('../middlewares/auth');      // verifies JWT, sets req.user.id
-const checkAdmin = require('../middlewares/checkAdmin');       // ensures req.user.role === 'admin'
+const authHybrid = require('../middlewares/authHybrid'); // accepts JWT or session
+const checkAdmin = require('../middlewares/checkAdmin'); // ensures req.user.role === 'admin'
 
 /**
  * @openapi
@@ -13,8 +13,9 @@ const checkAdmin = require('../middlewares/checkAdmin');       // ensures req.us
  *     summary: Get all categories
  *     tags:
  *       - Categories
+ *     security: []  # public
  *     responses:
- *       '200':
+ *       200:
  *         description: List of categories
  *         content:
  *           application/json:
@@ -22,12 +23,8 @@ const checkAdmin = require('../middlewares/checkAdmin');       // ensures req.us
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Category'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // Public: list categories
 router.get('/', categoryController.list);
@@ -48,45 +45,29 @@ router.get('/', categoryController.list);
  *           schema:
  *             $ref: '#/components/schemas/CategoryInput'
  *     responses:
- *       '201':
+ *       201:
  *         description: Category created
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Category'
- *       '400':
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '409':
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
  *         description: Conflict (duplicate category name)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // Admin: create category
-router.post('/', authenticateToken, checkAdmin, categoryController.create);
+router.post('/', authHybrid, checkAdmin, categoryController.create);
 
 /**
  * @openapi
@@ -98,13 +79,7 @@ router.post('/', authenticateToken, checkAdmin, categoryController.create);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: Category ID
+ *       - $ref: '#/components/parameters/PathId'
  *     requestBody:
  *       required: true
  *       content:
@@ -112,51 +87,31 @@ router.post('/', authenticateToken, checkAdmin, categoryController.create);
  *           schema:
  *             $ref: '#/components/schemas/CategoryInput'
  *     responses:
- *       '200':
+ *       200:
  *         description: Category updated
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Category'
- *       '400':
- *         description: Validation error or invalid id
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Category not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '409':
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
  *         description: Conflict (duplicate category name)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // Admin: update category
-router.put('/:id', authenticateToken, checkAdmin, categoryController.update);
+router.put('/:id', authHybrid, checkAdmin, categoryController.update);
 
 /**
  * @openapi
@@ -169,48 +124,22 @@ router.put('/:id', authenticateToken, checkAdmin, categoryController.update);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: Category ID
+ *       - $ref: '#/components/parameters/PathId'
  *     responses:
- *       '204':
+ *       204:
  *         description: Category deleted successfully
- *       '400':
- *         description: Invalid id
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: Unauthorized (missing/invalid token)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '403':
- *         description: Forbidden (admin only)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '404':
- *         description: Category not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '500':
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 // Admin: delete category
-router.delete('/:id', authenticateToken, checkAdmin, categoryController.remove);
+router.delete('/:id', authHybrid, checkAdmin, categoryController.remove);
 
 module.exports = router;
