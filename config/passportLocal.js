@@ -1,4 +1,4 @@
-// config/passportLocal.js
+// config\passportLocal.js
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');           // use native bcrypt already installed
 const usersModel = require('../models/user');

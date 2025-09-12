@@ -61,7 +61,7 @@ async function findById(orderId, userId) {
   return { order, items: itemsRes.rows };
 }
 
-// --- admin/user helpers for permissions ---
+// admin/user helpers for permissions 
 
 async function getMetaById(orderId) {
   const res = await pool.query(

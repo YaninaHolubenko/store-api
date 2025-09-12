@@ -1,12 +1,12 @@
 // validators/user.js
 const { body, param } = require('express-validator');
 
-/**
- * Validation rules for updating user profile (PUT/PATCH /users)
- * - Supports username/email updates
- * - Supports password change via currentPassword/newPassword/newPasswordConfirm
- * - Backward compatibility: accepts legacy `password` as "newPassword"
- */
+/*
+  Validation rules for updating user profile (PUT/PATCH /users)
+  - Supports username/email updates
+  - Supports password change via currentPassword/newPassword/newPasswordConfirm
+  - Backward compatibility: accepts legacy `password` as "newPassword"
+*/
 const updateProfileRules = [
   // username: optional, 3–30 chars, English letters, numbers, underscore
   body('username')
@@ -60,9 +60,9 @@ const updateProfileRules = [
     .withMessage('Passwords do not match'),
 ];
 
-/**
- * Validation rule for path param :id
- */
+/*
+  Validation rule for path param :id
+*/
 const idParamRule = [
   param('id')
     .exists().withMessage('user id is required')

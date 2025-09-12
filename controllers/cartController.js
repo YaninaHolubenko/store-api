@@ -60,12 +60,14 @@ async function getCart(req, res) {
 
 /**
  * Add product to cart or update quantity (route: POST /cart/items)
- * — серверная проверка остатков перед вставкой/обновлением
+ * — server-side stock check before insert/update
  */
 async function addItem(req, res) {
   try {
     const userId = await resolveLocalUserId(req);
-    const { productId, quantity } = req.body;
+    // Coerce payload to integers to match validators behavior
+    const productId = parseInt(req.body.productId, 10);
+    const quantity = parseInt(req.body.quantity, 10);
 
     if (!Number.isInteger(productId) || productId <= 0) {
       return res.status(400).json({ error: 'Invalid product id' });
@@ -275,7 +277,8 @@ async function updateItem(req, res) {
   try {
     const userId = await resolveLocalUserId(req);
     const cartItemId = parseInt(req.params.id, 10);
-    const { quantity } = req.body;
+    // Coerce to integer to align with validator
+    const quantity = parseInt(req.body.quantity, 10);
 
     if (!Number.isInteger(quantity) || quantity <= 0) {
       return res.status(400).json({ error: 'Invalid quantity' });

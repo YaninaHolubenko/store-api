@@ -1,4 +1,4 @@
-// Responsive header with hamburger menu and cart icon
+// client\src\components\Header.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';

@@ -13,7 +13,6 @@ export default function AdminHome() {
 
   return (
     <Container>
-      {/* Simple admin landing */}
       <h1 className={styles.title}>Admin Dashboard</h1>
 
       <div className={styles.grid}>

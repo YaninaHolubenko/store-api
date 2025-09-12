@@ -1,11 +1,11 @@
 // middlewares/authHybrid.js
 const authenticateToken = require('./auth');
 
-/**
- * Grant access if either:
- *  - a Passport session exists (req.isAuthenticated() && req.user)
- *  - OR a valid Bearer JWT is present (delegates to existing authenticateToken)
- */
+/*
+  Grant access if either:
+   - a Passport session exists (req.isAuthenticated() && req.user)
+   - OR a valid Bearer JWT is present (delegates to existing authenticateToken)
+*/
 module.exports = function authHybrid(req, res, next) {
   // Prefer Passport session when available
   if (typeof req.isAuthenticated === 'function' && req.isAuthenticated() && req.user) {

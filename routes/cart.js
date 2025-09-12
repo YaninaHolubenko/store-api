@@ -1,22 +1,13 @@
 // routes/cart.js
 const express = require('express');
-const authenticateToken = require('../middlewares/auth');
+const authHybrid = require('../middlewares/authHybrid'); // accepts JWT or session
 const cartController = require('../controllers/cartController');
 const router = express.Router();
 const { validationResult } = require('express-validator');
 const { addItem, updateItem, checkoutRules } = require('../validators/cart');
 
-// Require authentication (allow Passport session OR JWT)
-function allowSessionOrToken(req, res, next) {
-  if (req.isAuthenticated && req.isAuthenticated()) {
-    if (req.user && !req.userId) {
-      req.userId = req.user.id || req.user.sub || req.user.user_id;
-    }
-    return next();
-  }
-  return authenticateToken(req, res, next);
-}
-router.use(allowSessionOrToken);
+// Use unified hybrid auth for all cart routes
+router.use(authHybrid);
 
 /**
  * @openapi
@@ -179,7 +170,7 @@ router.post(
   '/:cartId/checkout',
   checkoutRules,
   (req, res, next) => {
-    const { validationResult } = require('express-validator');
+    // reuse already imported validationResult
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });

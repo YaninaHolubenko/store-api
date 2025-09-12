@@ -2,9 +2,9 @@
 const { getStripe } = require('../config/stripe');
 const Cart = require('../models/cart');
 
-/**
- * Convert a decimal price in GBP pounds to an integer amount in the smallest currency unit (pence).
- * Rounds to nearest penny to avoid floating point artifacts.
+/*
+  Convert a decimal price in GBP pounds to an integer amount in the smallest currency unit (pence).
+  Rounds to nearest penny to avoid floating point artifacts.
  */
 function toPence(value) {
   // value may come as string or number (pg "numeric"). We normalize carefully.
@@ -13,9 +13,9 @@ function toPence(value) {
   return Math.round(n * 100);
 }
 
-/**
- * Compute the total amount (in pence) for the current user's active cart.
- * Uses server-side prices from the database to prevent client-side tampering.
+/*
+  Compute the total amount (in pence) for the current user's active cart.
+  Uses server-side prices from the database to prevent client-side tampering.
  */
 async function computeCartAmountInPence(userId) {
   // 1) Get (or create) user's cart
@@ -34,10 +34,10 @@ async function computeCartAmountInPence(userId) {
   return { amount, cartId, items };
 }
 
-/**
- * POST /payments/create-intent
- * Creates a Stripe PaymentIntent for the current user's cart total.
- * Returns client_secret for client-side confirmation.
+/*
+  POST /payments/create-intent
+  Creates a Stripe PaymentIntent for the current user's cart total.
+  Returns client_secret for client-side confirmation.
  */
 async function createPaymentIntent(req, res) {
   try {

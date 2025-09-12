@@ -1,7 +1,6 @@
 /* client/src/components/OrderCard.module.css */
-/* Card container: horizontal layout on desktop */
 .card {
-  display: flex;                /* put left and right side-by-side */
+  display: flex;                
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -14,10 +13,10 @@
 
 /* Left block: thumbnail + main text */
 .left {
-  display: flex;                /* thumbnail + text inline */
+  display: flex;                
   align-items: center;
   gap: 12px;
-  min-width: 0;                 /* prevent text overflow */
+  min-width: 0;                
 }
 
 /* Thumbnail (first order item) */
@@ -46,7 +45,6 @@
   background: linear-gradient(180deg, #f3f4f6, #e5e7eb);
 }
 
-/* Text area on the left */
 .main {
   min-width: 0;
 }
@@ -66,7 +64,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6b7280; /* gray-500 */
+  color: #6b7280; 
   font-size: 0.9rem;
 }
 
@@ -74,32 +72,31 @@
   display: inline-block;
   padding: 2px 8px;
   border-radius: 9999px;
-  background: #f3f4f6; /* gray-100 */
-  color: #1f2937;      /* gray-800 */
+  background: #f3f4f6; 
+  color: #1f2937;      
   font-size: 0.8rem;
   text-transform: capitalize;
 }
 
 .badgePending {
   composes: badge;
-  background: #fef3c7; /* amber-100 */
-  color: #92400e;      /* amber-800 */
+  background: #fef3c7; 
+  color: #92400e;      
 }
 
 .separator {
   width: 1px;
   height: 14px;
-  background: #e5e7eb; /* gray-200 */
+  background: #e5e7eb; 
 }
 
 .date { white-space: nowrap; }
 
-/* Right block: align Total in a fixed-width column (desktop) */
 .right {
-  margin-left: auto;           /* push actions to the far right */
+  margin-left: auto;           
   display: grid;
   grid-auto-flow: column;
-  grid-template-columns: minmax(140px, 160px) auto auto; /* fixed space for Total */
+  grid-template-columns: minmax(140px, 160px) auto auto; 
   align-items: center;
   gap: 12px;
 }
@@ -107,20 +104,19 @@
 .amount {
   font-weight: 700;
   white-space: nowrap;
-  text-align: right;           /* align numbers neatly in one column */
+  text-align: right;           
 }
 
 .amountLabel {
   font-weight: 500;
   margin-right: 4px;
-  color: #4b5563; /* gray-600 */
+  color: #4b5563; 
 }
 
-/* Links and buttons */
 .link {
   text-decoration: none;
-  color: #2563eb; /* blue-600 */
-  white-space: nowrap;         /* avoid wrapping that shifts layout */
+  color: #2563eb; 
+  white-space: nowrap;         
 }
 
 .link:hover {
@@ -129,9 +125,9 @@
 
 /* Cancel button */
 .cancel {
-  background: #fee2e2;          /* red-100 */
-  color: #b91c1c;               /* red-700 */
-  border: 1px solid #fecaca;    /* red-200 */
+  background: #fee2e2;          
+  color: #b91c1c;               
+  border: 1px solid #fecaca;    
   border-radius: 8px;
   padding: 4px 10px;
   font-size: 0.85rem;
@@ -140,16 +136,14 @@
 }
 
 .cancel:hover {
-  background: #fecaca;          /* red-200 */
+  background: #fecaca;          
 }
 
-/* =========================
-   Responsive (≤ 640px)
-   ========================= */
+/* Responsive (≤ 640px) */
 @media (max-width: 640px) {
   .card {
     flex-direction: column;
-    align-items: stretch; /* full width children */
+    align-items: stretch; 
     gap: 10px;
     padding: 14px;
   }
@@ -170,29 +164,27 @@
   .title { margin-bottom: 4px; }
   .meta {
     gap: 6px;
-    flex-wrap: wrap; /* let date wrap under status on small widths */
+    flex-wrap: wrap; 
   }
 
-  /* Stack right block into a single column: Total → link → Cancel */
   .right {
     width: 100%;
     margin-left: 0;
-    grid-template-columns: 1fr;  /* single column on mobile */
+    grid-template-columns: 1fr;  
     grid-auto-flow: row;
     gap: 8px;
   }
 
   .amount {
-    text-align: left;           /* align totals with text */
+    text-align: left;          
     font-size: 1.05rem;
   }
 
   .link {
-    white-space: normal;        /* allow wrap if needed */
+    white-space: normal;        
     margin-top: 2px;
   }
 
-  /* Make cancel button full-width at the bottom */
   .cancel {
     width: 100%;
     text-align: center;

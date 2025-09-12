@@ -2,11 +2,11 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
 
-/**
- * Get current user's profile
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
+/*
+  Get current user's profile
+  @param {import('express').Request} req
+  @param {import('express').Response} res
+*/
 async function getProfile(req, res) {
   try {
     const userId = req.user.id;
@@ -34,11 +34,11 @@ async function getProfile(req, res) {
   }
 }
 
-/**
- * Get a specific user's profile by ID (self only)
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
+/*
+  Get a specific user's profile by ID (self only)
+  @param {import('express').Request} req
+  @param {import('express').Response} res
+*/
 async function getById(req, res) {
   try {
     const targetId = parseInt(req.params.id, 10);
@@ -67,16 +67,16 @@ async function getById(req, res) {
   }
 }
 
-/**
- * Update current user's profile
- * Supports:
- *  - username/email update
- *  - password change (currentPassword + newPassword + newPasswordConfirm)
- *  - password set for OAuth-only users (no currentPassword required)
- * Backward compatibility: accepts `password` as "new password" if newPassword not provided
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
+/*
+  Update current user's profile
+  Supports:
+   - username/email update
+   - password change (currentPassword + newPassword + newPasswordConfirm)
+   - password set for OAuth-only users (no currentPassword required)
+  Backward compatibility: accepts `password` as "new password" if newPassword not provided
+  @param {import('express').Request} req
+  @param {import('express').Response} res
+*/
 async function updateProfile(req, res) {
   try {
     const userId = req.user.id;
@@ -156,11 +156,11 @@ async function updateProfile(req, res) {
   }
 }
 
-/**
- * Delete a specific user's account by ID (self only)
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
+/*
+  Delete a specific user's account by ID (self only)
+  @param {import('express').Request} req
+  @param {import('express').Response} res
+*/
 async function deleteById(req, res) {
   try {
     const targetId = parseInt(req.params.id, 10);
@@ -175,9 +175,9 @@ async function deleteById(req, res) {
   }
 }
 
-/**
- * GET /users (admin only): list all users with optional search + pagination
- */
+/*
+  GET /users (admin only): list all users with optional search + pagination
+*/
 async function adminList(req, res) {
   try {
     const search = req.query.search || null;

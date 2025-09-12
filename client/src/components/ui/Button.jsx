@@ -1,4 +1,4 @@
-// Reusable Button component.
+//client\src\components\ui\Button.jsx// Reusable Button component.
 // - Renders <Link> when `to` prop is passed, otherwise <button>
 // - Props:
 //   - to?: string (render Link)
@@ -35,7 +35,7 @@ export default function Button({
     variant && styles[variant],
     size && styles[size],
     block && styles.block,
-    disabled && styles.disabledLink, // for <Link> case
+    disabled && styles.disabledLink, 
     className
   );
 

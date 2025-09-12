@@ -1,4 +1,4 @@
-// Register page: create account, store JWT, update auth context, navigate home
+// client/src/pages/Register.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register as apiRegister } from '../api';

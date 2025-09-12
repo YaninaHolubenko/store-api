@@ -1,6 +1,4 @@
-// client/src/api.js
-// Centralized API helper using fetch and JWT in localStorage
-
+// client\src\api.js
 const API_URL =
   (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
   process.env.REACT_APP_API_URL ||
@@ -8,7 +6,7 @@ const API_URL =
 
 const DEFAULT_CREDENTIALS = 'include'; // send session cookie (for Google OAuth)
 
-// ---- Token helpers ----
+// Token helpers 
 export function getToken() {
   return localStorage.getItem('token');
 }

@@ -1,4 +1,4 @@
-/* Header row with back link and title */
+/* client\src\pages\admin\AdminUsers.module.css */
 .header {
   display: flex;
   align-items: center;
@@ -62,7 +62,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 640px; /* keeps columns readable when scrolled */
+  min-width: 640px; 
 }
 
 .th {
@@ -130,5 +130,5 @@
 
 /* Extra-compact phones */
 @media (max-width: 420px) {
-  .table { min-width: 560px; } /* keeps headers legible; horizontal scroll appears */
+  .table { min-width: 560px; } 
 }

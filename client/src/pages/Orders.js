@@ -10,7 +10,7 @@ const API_URL =
   process.env.REACT_APP_API_URL ||
   'http://localhost:3000';
 
-/* -------- helpers (module scope) -------- */
+// helpers (module scope) 
 // Extract first item (title + image) from order details payload
 function pickFirstItem(details) {
   const arr =
@@ -57,7 +57,6 @@ function authHeaders() {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
-/* ---------------------------------------- */
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);

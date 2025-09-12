@@ -158,7 +158,8 @@ router.put(
   '/:id',
   authHybrid,          // hybrid guard (session OR JWT)
   checkAdmin,
-  [...idParamRule, ...updateProductRules],
+  idParamRule,
+  updateProductRules,
   validate,
   productController.update
 );

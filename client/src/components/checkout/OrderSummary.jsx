@@ -31,7 +31,6 @@ export default function OrderSummary({ items = [], total, count }) {
         <span>Subtotal</span>
         <strong>£{safeSubtotal.toFixed(2)}</strong>
       </div>
-      {/* Optional: shipping/taxes can be added here as separate lines later */}
     </section>
   );
 }

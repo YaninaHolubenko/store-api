@@ -11,11 +11,11 @@ const router = express.Router();
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, BCRYPT_SALT_ROUNDS } = process.env;
 
-/**
- * Create or find a local user by Google profile.
- * Stores a random hashed password if schema requires password/password_hash column.
- * This keeps the users table consistent without exposing any real password.
- */
+/*
+  Create or find a local user by Google profile.
+  Stores a random hashed password if schema requires password/password_hash column.
+  This keeps the users table consistent without exposing any real password.
+*/
 async function ensureLocalUser({ email, displayName }) {
   if (!email) {
     const err = new Error('Google account did not provide an email');

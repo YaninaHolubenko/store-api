@@ -1,4 +1,4 @@
-// Labeled input with consistent structure, states, and optional right slot (eye icon etc.)
+//client\src\components\ui\FormInput.jsx
 import React, { useId, useState } from 'react';
 
 export default function FormInput({
@@ -13,8 +13,6 @@ export default function FormInput({
   placeholder,
   autoComplete,
   required = false,
-
-  // visual / layout props
   blockClassName,
   labelClassName,
   inputClassName,

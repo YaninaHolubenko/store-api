@@ -10,7 +10,7 @@ const API_URL =
   process.env.REACT_APP_API_URL ||
   'http://localhost:3000';
 
-/* ---------- helpers ---------- */
+//helpers  
 // Build auth headers from stored JWT
 function authHeaders() {
   const token = localStorage.getItem('token');
@@ -59,7 +59,6 @@ function normalizeItems(items, currency = 'GBP') {
     };
   });
 }
-/* ----------------------------- */
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -134,9 +133,9 @@ export default function OrderDetails() {
         return;
       }
       const data = await res.json().catch(() => null);
-      window.alert(data?.error || `Failed to cancel (HTTP ${res.status})`); // eslint-disable-line no-alert
+      window.alert(data?.error || `Failed to cancel (HTTP ${res.status})`); 
     } catch (e) {
-      window.alert(e?.message || 'Failed to cancel'); // eslint-disable-line no-alert
+      window.alert(e?.message || 'Failed to cancel'); 
     }
   }
 

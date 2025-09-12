@@ -1,4 +1,4 @@
-// Helpers for category-related UI
+// client\src\utils\categories.js
 import { toTitle } from './format';
 
 /**

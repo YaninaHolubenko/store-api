@@ -12,7 +12,7 @@ const API_URL =
   process.env.REACT_APP_API_URL ||
   'http://localhost:3000';
 
-// ---- Helpers ----
+// Helpers 
 function money(v, currency = 'GBP') {
   const n = typeof v === 'number' ? v : Number(v || 0);
   return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(n);
@@ -28,7 +28,7 @@ function AuthAwareError({ message }) {
   );
 }
 
-/** Try to read transitional JWT token from common places (if present). */
+// Try to read transitional JWT token from common places (if present). 
 function getClientToken() {
   try {
     if (typeof window !== 'undefined') {
@@ -53,13 +53,12 @@ function getClientToken() {
   return null;
 }
 
-/** Build headers with optional Bearer token (cookie-first, token as fallback). */
+//Build headers with optional Bearer token (cookie-first, token as fallback). 
 function authHeaders(extra = {}) {
   const t = getClientToken();
   return t ? { ...extra, Authorization: `Bearer ${t}` } : extra;
 }
 
-// ---- Small, reusable form ----
 function ProductForm({ initial, categories, onCancel, onSubmit, submitting }) {
   const [form, setForm] = useState(() => ({
     name: initial?.name || '',
@@ -288,7 +287,7 @@ export default function AdminProducts() {
       closeForm();
       await fetchProducts();
     } catch (e) {
-      alert(e?.message || 'Save failed'); // eslint-disable-line no-alert
+      alert(e?.message || 'Save failed'); 
     } finally {
       setSubmitting(false);
     }
@@ -296,7 +295,7 @@ export default function AdminProducts() {
 
   async function removeProduct(id) {
     if (!id) return;
-    if (!window.confirm('Delete this product?')) return; // eslint-disable-line no-alert
+    if (!window.confirm('Delete this product?')) return; 
     setDeletingId(id);
     try {
       const res = await fetch(`${API_URL}/products/${id}`, {
@@ -308,7 +307,7 @@ export default function AdminProducts() {
       if (!res.ok) throw new Error(data?.error || `Delete failed (HTTP ${res.status})`);
       await fetchProducts();
     } catch (e) {
-      alert(e?.message || 'Delete failed'); // eslint-disable-line no-alert
+      alert(e?.message || 'Delete failed'); 
     } finally {
       setDeletingId(null);
     }

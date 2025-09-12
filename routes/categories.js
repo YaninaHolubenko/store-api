@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 
 const categoryController = require('../controllers/categoryController');
-const authenticateToken = require('../middlewares/auth');      // verifies JWT, sets req.user.id
-const checkAdmin = require('../middlewares/checkAdmin');       // ensures req.user.role === 'admin'
+const authHybrid = require('../middlewares/authHybrid'); // accepts JWT or session
+const checkAdmin = require('../middlewares/checkAdmin'); // ensures req.user.role === 'admin'
 
 /**
  * @openapi
@@ -67,7 +67,7 @@ router.get('/', categoryController.list);
  *         $ref: '#/components/responses/ServerError'
  */
 // Admin: create category
-router.post('/', authenticateToken, checkAdmin, categoryController.create);
+router.post('/', authHybrid, checkAdmin, categoryController.create);
 
 /**
  * @openapi
@@ -111,7 +111,7 @@ router.post('/', authenticateToken, checkAdmin, categoryController.create);
  *         $ref: '#/components/responses/ServerError'
  */
 // Admin: update category
-router.put('/:id', authenticateToken, checkAdmin, categoryController.update);
+router.put('/:id', authHybrid, checkAdmin, categoryController.update);
 
 /**
  * @openapi
@@ -140,6 +140,6 @@ router.put('/:id', authenticateToken, checkAdmin, categoryController.update);
  *         $ref: '#/components/responses/ServerError'
  */
 // Admin: delete category
-router.delete('/:id', authenticateToken, checkAdmin, categoryController.remove);
+router.delete('/:id', authHybrid, checkAdmin, categoryController.remove);
 
 module.exports = router;

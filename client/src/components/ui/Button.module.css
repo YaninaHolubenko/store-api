@@ -1,3 +1,4 @@
+/* client\src\components\ui\Button.module.css */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -22,14 +23,11 @@
   cursor: not-allowed;
 }
 
-/* Variants */
+
 .primary { background: #111; color: #fff; border-color: #222; }
 .primary:hover:not(:disabled) { background: #000; }
-
 .outline { background: #fff; color: #111; border-color: #222; }
 .outline:hover:not(:disabled) { background: #f6f6f6; }
-
-/* NEW: secondary — subtle, for neutral actions like "Cancel" */
 .secondary {
   background: #ffffff;
   color: #344054;
@@ -44,20 +42,16 @@
 .danger  { background: #c00; color: #fff; border-color: #900; }
 .danger:hover:not(:disabled) { background: #a80000; }
 
-/* Sizes */
 .sm { padding: 8px 12px; font-size: 0.95rem; min-height: 36px; }
 
-/* Block (full width) */
 .block { width: 100%; }
 
-/* For <Link> “disabled” simulation */
 .disabledLink {
   opacity: 0.6;
   pointer-events: none;
   cursor: not-allowed;
 }
 
-/* Focus ring */
 .btn:focus-visible {
   outline: 2px solid #6aa3ff;
   outline-offset: 2px;

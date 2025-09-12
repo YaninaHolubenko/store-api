@@ -1,4 +1,4 @@
-// Data normalizers for API responses with varying shapes
+// client\src\utils\normalize.js
 import { toTitle } from './format';
 
 /** Normalize products list from various API shapes into a stable shape */

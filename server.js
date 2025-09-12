@@ -6,7 +6,7 @@ const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
-const compression = require('compression'); // add gzip compression
+const compression = require('compression'); 
 
 const googleAuthRouter = require('./routes/auth.google');
 const sessionRouter = require('./routes/session');
@@ -43,10 +43,24 @@ app.use(
   })
 );
 
+// Build a whitelist from ENV (supports multiple comma-separated origins)
+const ORIGINS = (process.env.CLIENT_URLS || process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    // Allow credentials (cookies) and restrict to known origins
+    origin(origin, cb) {
+      // Allow same-origin or tools without Origin header (curl/health checks)
+      if (!origin) return cb(null, true);
+      cb(null, ORIGINS.includes(origin));
+    },
     credentials: true,
+    // Be explicit for preflight requests
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
   })
 );
 

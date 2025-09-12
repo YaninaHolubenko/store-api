@@ -1,5 +1,4 @@
-// client/src/pages/Profile.jsx
-// Profile page with aligned success/error banner to the card width via a shared frame.
+// client/src/pages/Profile.js
 import React, { useEffect, useState } from 'react';
 import Container from '../components/Container';
 import Button from '../components/ui/Button';

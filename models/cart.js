@@ -1,9 +1,9 @@
 // models/cart.js
 const pool = require('../db/index');
 
-/**
- * Find an existing cart for the user or create a new one.
- */
+/*
+  Find an existing cart for the user or create a new one.
+*/
 async function findOrCreateByUser(userId) {
   const res = await pool.query('SELECT id FROM carts WHERE user_id = $1', [userId]);
   if (res.rows.length) return res.rows[0];
@@ -15,9 +15,9 @@ async function findOrCreateByUser(userId) {
   return ins.rows[0];
 }
 
-/**
- * Return cart items joined with product info for rendering / totals.
- */
+/*
+ Return cart items joined with product info for rendering / totals.
+*/
 async function getItemsWithProductDetails(cartId) {
   const res = await pool.query(
     `
@@ -38,11 +38,11 @@ async function getItemsWithProductDetails(cartId) {
   return res.rows;
 }
 
-/**
- * Add an item to the cart or increase its quantity.
- * Enforces stock limit at insert/update time.
- * Throws Error with .code = 'INVALID_PRODUCT' | 'PRODUCT_NOT_FOUND' | 'INVALID_QUANTITY' | 'INSUFFICIENT_STOCK'
- */
+/*
+  Add an item to the cart or increase its quantity.
+  Enforces stock limit at insert/update time.
+  Throws Error with .code = 'INVALID_PRODUCT' | 'PRODUCT_NOT_FOUND' | 'INVALID_QUANTITY' | 'INSUFFICIENT_STOCK'
+*/
 async function addOrUpdateItem(cartId, productId, quantity) {
   // normalize inputs
   const pid = Number(productId);
@@ -130,16 +130,16 @@ async function addOrUpdateItem(cartId, productId, quantity) {
   return ins.rows[0];
 }
 
-/**
- * Transactional checkout:
- * - Validates stock for all items (again) under FOR UPDATE
- * - Decrements product stock
- * - Creates order and order_items
- * - Clears cart items
- * Returns { orderId, totalAmount, status }
- *
- * Throws Error with .code = 'CART_EMPTY' | 'INSUFFICIENT_STOCK_AT_CHECKOUT'
- */
+/*
+  Transactional checkout:
+  - Validates stock for all items (again) under FOR UPDATE
+  - Decrements product stock
+  - Creates order and order_items
+  - Clears cart items
+  Returns { orderId, totalAmount, status }
+ 
+  Throws Error with .code = 'CART_EMPTY' | 'INSUFFICIENT_STOCK_AT_CHECKOUT'
+*/
 async function checkoutCart(cartId, userId) {
   const client = await pool.connect();
   try {
@@ -240,9 +240,9 @@ async function checkoutCart(cartId, userId) {
   }
 }
 
-/**
- * Change quantity for a cart item owned by the user.
- */
+/*
+  Change quantity for a cart item owned by the user.
+*/
 async function updateItemQuantity(cartItemId, userId, quantity) {
   const res = await pool.query(
     `
@@ -259,9 +259,9 @@ async function updateItemQuantity(cartItemId, userId, quantity) {
   return res.rows[0] || null;
 }
 
-/**
- * Remove a cart item owned by the user.
- */
+/*
+  Remove a cart item owned by the user.
+*/
 async function removeItem(cartItemId, userId) {
   const res = await pool.query(
     `
@@ -277,9 +277,9 @@ async function removeItem(cartItemId, userId) {
   return res.rows.length > 0;
 }
 
-/**
- * Check if a given cart belongs to the user.
- */
+/*
+  Check if a given cart belongs to the user.
+*/
 async function userOwnsCart(cartId, userId) {
   const result = await pool.query(
     'SELECT 1 FROM carts WHERE id = $1 AND user_id = $2',

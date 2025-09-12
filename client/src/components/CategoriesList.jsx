@@ -1,3 +1,4 @@
+//client\src\components\CategoriesList.jsx
 import React, { useState, useEffect } from 'react';
 import styles from './CategoriesList.module.css';
 

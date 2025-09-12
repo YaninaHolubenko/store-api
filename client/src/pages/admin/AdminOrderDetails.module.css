@@ -1,3 +1,4 @@
+/* client\src\pages\admin\AdminOrderDetails.module.css */
 .header {
   display: flex;
   align-items: center;
@@ -21,7 +22,6 @@
   border-radius: 8px;
 }
 
-/* Summary */
 .summary {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -57,7 +57,6 @@
 .saveBtn[disabled] { opacity: .5; cursor: default; }
 .sub { color: #6b7280; }
 
-/* Items */
 .itemsTitle { margin: 16px 0 10px; }
 .items { display: grid; gap: 10px; }
 
@@ -72,7 +71,6 @@
   border-radius: 12px;
 }
 
-/* Thumbnail */
 .thumb {
   width: 56px;
   height: 56px;

@@ -1,4 +1,4 @@
-// Home page: products grid with search and category filter (client-side filtering)
+// client\src\pages\Home.js
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getProducts, getCategories } from '../api';
@@ -120,7 +120,6 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      {/* Sidebar on desktop; collapsible list on mobile handled by CSS media queries */}
       <aside className={styles.sidebar}>
         <CategoriesList
           categories={categories}

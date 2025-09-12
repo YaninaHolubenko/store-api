@@ -1,3 +1,4 @@
+/* client\src\components\Banner.module.css */
 .wrapper {
   padding: 8px 12px;
   border-radius: 8px;
@@ -8,24 +9,24 @@
   line-height: 1.35;
 }
 
-/* Variants */
 .error {
   background: #ffe6e6;
   color: #a40000;
   border: 1px solid #f5b5b5;
 }
+
 .success {
   background: #e8fff1;
   color: #035e2b;
   border: 1px solid #b9edce;
 }
+
 .info {
   background: #eef6ff;
   color: #0b57d0;
   border: 1px solid #cfe3ff;
 }
 
-/* Optional close button */
 .close {
   margin-left: auto;
   border: 0;
@@ -35,4 +36,5 @@
   line-height: 1;
   opacity: 0.7;
 }
+
 .close:hover { opacity: 1; }

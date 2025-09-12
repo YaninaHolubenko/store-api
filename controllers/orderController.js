@@ -62,9 +62,7 @@ async function getOrder(req, res) {
   }
 }
 
-/**
- * Update order status (admin only; route already uses checkAdmin)
- */
+// Update order status (admin only; route already uses checkAdmin)
 async function updateStatus(req, res) {
   try {
     const orderId = parseInt(req.params.id, 10);
@@ -96,10 +94,10 @@ async function updateStatus(req, res) {
   }
 }
 
-/**
- * Delete or cancel an order:
- * - Admin: hard delete any order (order + items)
- * - User: cancel own 'pending' order (set status = 'cancelled')
+/*
+  Delete or cancel an order:
+  - Admin: hard delete any order (order + items)
+  - User: cancel own 'pending' order (set status = 'cancelled')
  */
 async function deleteOrder(req, res) {
   try {
@@ -146,9 +144,7 @@ async function deleteOrder(req, res) {
   }
 }
 
-/**
- * Admin: list all orders with owner info (optional ?status=)
- */
+// Admin: list all orders with owner info (optional ?status=)
 async function adminListAll(req, res) {
   try {
     const { status } = req.query;
@@ -160,9 +156,7 @@ async function adminListAll(req, res) {
   }
 }
 
-/**
- * Admin: get any order with items and owner info
- */
+//Admin: get any order with items and owner info
 async function adminGetOne(req, res) {
   try {
     const orderId = parseInt(req.params.id, 10);
@@ -181,12 +175,12 @@ async function adminGetOne(req, res) {
   }
 }
 
-/**
- * Complete order after successful Stripe payment.
- * - Validates PaymentIntent (status, currency, metadata)
- * - Verifies that the PaymentIntent belongs to the current user
- * - Compares PI amount with current server-side cart total by cartId
- * - Converts cart -> order via a transactional method
+/*
+  Complete order after successful Stripe payment.
+  - Validates PaymentIntent (status, currency, metadata)
+  - Verifies that the PaymentIntent belongs to the current user
+  - Compares PI amount with current server-side cart total by cartId
+  - Converts cart -> order via a transactional method
  */
 async function completeAfterPayment(req, res) {
   try {

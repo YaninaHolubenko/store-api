@@ -1,3 +1,4 @@
+//client\src\components\ui\OAuthButtons.jsx
 import React from 'react';
 import styles from './OAuthButtons.module.css';
 

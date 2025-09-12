@@ -1,18 +1,17 @@
-// Simple auth context: supports both JWT and server sessions (OAuth)
+// client\src\contexts\AuthContext.js
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { getToken, setToken as saveToken, clearToken, getCurrentUser } from '../api';
 
 const AuthContext = createContext(null);
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
-/* ---------- helpers to normalize user and role ---------- */
+/* helpers to normalize user and role */
 function pickRole(src) {
   // Accept multiple shapes: { role }, { is_admin }, { isAdmin }, { scope }, JWT custom claims, etc.
   const rawRole =
     src?.role ??
     (src?.is_admin ? 'admin' : undefined) ??
     (src?.isAdmin ? 'admin' : undefined) ??
-    // sometimes APIs put roles/scopes in arrays or space-separated strings
     (Array.isArray(src?.roles) ? (src.roles.includes('admin') ? 'admin' : undefined) : undefined) ??
     (typeof src?.scope === 'string' && src.scope.split(' ').includes('admin') ? 'admin' : undefined) ??
     undefined;
@@ -45,7 +44,6 @@ function decodeJwt(token) {
     return null;
   }
 }
-/* -------------------------------------------------------- */
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

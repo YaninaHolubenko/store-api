@@ -44,7 +44,7 @@ export default function AdminOrderDetails() {
         setErr('');
         const res = await fetch(`${API_URL}/orders/admin/orders/${id}`, {
           credentials: 'include',
-          headers: { Accept: 'application/json', ...authHeaders() }, // add Bearer if present
+          headers: { Accept: 'application/json', ...authHeaders() }, 
         });
         const data = await res.json().catch(() => null);
 
@@ -79,7 +79,7 @@ export default function AdminOrderDetails() {
       const res = await fetch(`${API_URL}/orders/${order.id}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() }, // add Bearer if present
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }, 
         body: JSON.stringify({ status: editStatus }),
       });
       const data = await res.json().catch(() => null);
@@ -158,7 +158,6 @@ export default function AdminOrderDetails() {
           <div className={styles.items}>
             {items.map((it) => {
               const line = Number(it.price) * Number(it.quantity || 1);
-              // Prefer product image fields; SafeImage will resolve relative URLs
               const rawSrc = it.image_url || it.product_image_url || it.image || it.thumbnail;
 
               return (

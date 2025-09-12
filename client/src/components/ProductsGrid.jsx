@@ -1,4 +1,4 @@
-// Simple reusable grid for product cards
+//client\src\components\ProductsGrid.jsx
 import React from 'react';
 import ProductCard from './ProductCard';
 import styles from './ProductsGrid.module.css';

@@ -1,4 +1,4 @@
-// Reusable alert banner: error / success / info
+// client\src\components\Banner.jsx
 import React from 'react';
 import styles from './Banner.module.css';
 

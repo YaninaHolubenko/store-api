@@ -1,3 +1,4 @@
+//client/src/components/ui/Alert.jsx
 // Reusable alert box.
 // Props:
 //  - variant?: 'info' | 'success' | 'warning' | 'error' (default 'info')

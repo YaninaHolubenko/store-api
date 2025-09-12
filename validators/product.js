@@ -27,9 +27,9 @@ function isAllowedImageUrl(value) {
   return false;
 }
 
-/**
- * Rules for creating a product (POST /products)
- */
+/*
+  Rules for creating a product (POST /products)
+*/
 const createProductRules = [
   body('name')
     .exists().withMessage('name is required')

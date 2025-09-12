@@ -1,4 +1,4 @@
-// Helpers for cart item shapes coming from different APIs
+// client\src\utils\cart.js
 
 /** Build a stable React key for a cart item */
 export function getItemKey(it = {}) {

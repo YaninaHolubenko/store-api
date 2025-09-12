@@ -1,3 +1,4 @@
+// client\src\pages\Checkout.js
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Container from '../components/Container';
@@ -39,7 +40,7 @@ export default function Checkout() {
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         const msg = data?.error || `Failed to complete order (HTTP ${res.status})`;
-        window.alert(msg); // eslint-disable-line no-alert
+        window.alert(msg); 
         return;
       }
 
@@ -50,7 +51,7 @@ export default function Checkout() {
 
       navigate('/orders', { replace: true });
     } catch (e) {
-      window.alert(e?.message || 'Failed to complete order'); // eslint-disable-line no-alert
+      window.alert(e?.message || 'Failed to complete order'); 
     }
   }
 

@@ -1,4 +1,4 @@
-// Small text/regex helpers
+// client\src\utils\format.js
 
 /** Title-case the first character of a string */
 export function toTitle(s) {

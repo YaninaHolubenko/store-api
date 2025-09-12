@@ -1,4 +1,4 @@
-/* Header and filters */
+/* client\src\pages\admin\AdminOrders.module.css */
 .header {
   display: flex;
   align-items: center;
@@ -11,13 +11,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;               /* allow wrap on small screens */
+  flex-wrap: wrap;             
 }
 
 .filterLbl {
-  display: inline-flex;          /* keep label and control aligned */
+  display: inline-flex;          
   align-items: center;
-  gap: 8px;                      /* space between label text and control */
+  gap: 8px;                      
   font-size: 0.95rem;
 }
 
@@ -31,7 +31,7 @@
 /* helper texts */
 .info {
   padding: 10px 0;
-  color: #6b7280; /* gray-500 */
+  color: #6b7280; 
 }
 
 .error {
@@ -42,7 +42,6 @@
   border-radius: 8px;
 }
 
-/* simple table (desktop) */
 .table {
   display: grid;
   gap: 8px;
@@ -87,7 +86,6 @@
   cursor: default;
 }
 
-/* search input styling to match selects */
 .input {
   margin-left: 8px;
   padding: 6px 10px;

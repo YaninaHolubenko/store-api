@@ -1,4 +1,4 @@
-/* Layout container */
+/* client\src\components\Header.module.css */
 .nav {
   padding: 1rem;
   border-bottom: 1px solid #eee;
@@ -59,10 +59,8 @@
   text-align: center;
 }
 
-/* NEW: muted text for "Hi, user" */
 .muted { opacity: 0.8; }
 
-/* NEW: logout button extracted from inline styles */
 .logoutBtn {
   padding: 6px 10px;
   border-radius: 8px;
@@ -72,13 +70,12 @@
   cursor: pointer;
 }
 
-/* NEW: role badge (e.g., Admin) */
 .roleBadge {
   display: inline-block;
   padding: 2px 8px;
   margin-left: 6px;
   border-radius: 9999px;
-  background: #111827;   /* slate-900 */
+  background: #111827;  
   color: #fff;
   font-size: 12px;
   line-height: 1.4;

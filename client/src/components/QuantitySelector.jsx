@@ -1,4 +1,4 @@
-// Reusable quantity selector: [-] [input number] [+]
+//client\src\components\QuantitySelector.jsx
 import React from 'react';
 import styles from './QuantitySelector.module.css';
 

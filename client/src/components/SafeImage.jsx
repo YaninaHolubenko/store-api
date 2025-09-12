@@ -33,8 +33,8 @@ export default function SafeImage({
   loading = 'lazy',
   decoding = 'async',
   referrerPolicy = 'no-referrer',
-  fallback,      // raw <svg>...</svg> or URL/data:
-  fallbackSrc,   // explicit fallback URL/data:
+  fallback,      
+  fallbackSrc,   
   makeAbsolute = true,
   onError,
   ...rest

@@ -1,4 +1,4 @@
-// Simple layout container with max-width and horizontal padding
+// client\src\components\Container.jsx
 import React from 'react';
 import styles from './Container.module.css';
 

@@ -1,3 +1,4 @@
+/* client\src\components\module.css */
 .row {
   display: flex;
   gap: 8px;
@@ -9,7 +10,7 @@
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
-  min-width: 0; /* prevents overflow on small screens */
+  min-width: 0; 
 }
 
 .reset {

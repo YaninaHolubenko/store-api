@@ -1,6 +1,5 @@
 /* client/src/pages/Profile.module.css */
 
-/* Page shell */
 .shell {
   max-width: 1040px;
   margin: 0 auto;
@@ -112,7 +111,7 @@
   border-radius: 10px;
 }
 
-/* ---------- Responsive ---------- */
+/* Responsive */
 @media (max-width: 720px) {
   .shell {
     padding-left: 10px;

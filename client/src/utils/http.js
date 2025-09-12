@@ -1,4 +1,4 @@
-// Tiny fetch helper with JSON parsing + friendly error objects
+// client\src\utils\http.js
 export async function fetchJSON(url, options = {}) {
   const res = await fetch(url, {
     headers: { Accept: 'application/json', ...(options.headers || {}) },

@@ -1,4 +1,4 @@
-// Real login form: calls /login, saves JWT, updates auth context, navigates home
+// client\src\pages\Login.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { login as apiLogin } from '../api';
@@ -117,14 +117,12 @@ export default function Login() {
               required
             />
 
-            {/* Submit button: full width and same height as inputs */}
             <Button type="submit" disabled={loading} className={styles.fullButton}>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </div>
         </form>
 
-        {/* OAuth (оставляем как было, чтобы не трогать стили) */}
         <div className={styles.oauthRow}>
           <OAuthButtons />
         </div>

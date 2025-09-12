@@ -1,4 +1,4 @@
-// Product details page: robust fetch + resilient Add to cart (styles moved to CSS module)
+// client\src\pages\ProductDetails.js
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Container from '../components/Container';

@@ -1,11 +1,10 @@
 // client/src/contexts/CartContext.js
-// Cart context: keeps items, count, total and actions (refresh/add/remove/update)
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
   getCart as apiGetCart,
   addToCart as apiAddToCart,
   removeCartItem as apiRemoveCartItem,
-  updateCartItem as apiUpdateCartItem, // must exist in client/src/api.js
+  updateCartItem as apiUpdateCartItem, 
 } from '../api';
 import { useAuth } from './AuthContext';
 
@@ -23,7 +22,7 @@ function normalizeItems(resp) {
     const idRaw =
       it.id ??
       it.item_id ??
-      it.cart_item_id ??     // important variant
+      it.cart_item_id ??     
       it.cartItemId ??
       null;
 
@@ -64,7 +63,6 @@ function normalizeItems(resp) {
 }
 
 function formatStockError(err) {
-  // сервер отдает { error: 'Insufficient stock', details: { productId, productName?, requested, available } }
   const d = err?.body?.details || err?.details || null;
   if (err?.status === 409 && (err?.message?.toLowerCase?.().includes('insufficient') || err?.body?.error === 'Insufficient stock')) {
     const name = d?.productName || (d?.productId ? `Product #${d.productId}` : 'This item');
@@ -74,11 +72,11 @@ function formatStockError(err) {
     }
     return 'Insufficient stock for this item.';
   }
-  // валидация
+
   if (err?.status === 400) return err.message || 'Invalid request.';
-  // неавторизован
+ 
   if (err?.status === 401 || err?.status === 403) return 'Please sign in to modify your cart.';
-  // дефолт
+
   return err?.message || 'Cart action failed.';
 }
 
@@ -155,14 +153,14 @@ export function CartProvider({ children }) {
       return false;
     }
 
-    const prev = items; // snapshot for rollback
+    const prev = items; 
     setItems((curr) => curr.filter((it) => it.id !== itemId));
 
     try {
       await apiRemoveCartItem(itemId);
       return true;
     } catch (e) {
-      setItems(prev); // rollback on failure
+      setItems(prev); 
       setError(e?.message || 'Failed to remove item.');
       return false;
     }
@@ -177,9 +175,9 @@ export function CartProvider({ children }) {
       return false;
     }
 
-    const q = Math.max(1, Number(quantity) || 1); // ensure positive integer
+    const q = Math.max(1, Number(quantity) || 1); 
 
-    const prev = items; // snapshot for rollback
+    const prev = items; 
     setItems((curr) =>
       curr.map((it) =>
         it.id === itemId ? { ...it, quantity: q, lineTotal: Number(it.price) * q } : it
@@ -191,7 +189,7 @@ export function CartProvider({ children }) {
       await apiUpdateCartItem(itemId, q);
       return true;
     } catch (e) {
-      setItems(prev); // rollback on failure
+      setItems(prev); 
       setError(formatStockError(e));
       return false;
     }

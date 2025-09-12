@@ -1,5 +1,4 @@
 /* client/src/pages/Cart.module.css */
-
 .header {
   margin: 12px 0 8px;
 }
@@ -12,7 +11,7 @@
 
 .loading {
   padding: 24px 0;
-  color: #6b7280; /* gray-500 */
+  color: #6b7280; 
   text-align: center;
 }
 
@@ -25,7 +24,7 @@
 
 /* General link look used across the page */
 .link {
-  color: #2563eb; /* blue-600 */
+  color: #2563eb; 
   text-decoration: none;
 }
 .link:hover {
@@ -34,7 +33,7 @@
 
 /* Empty-state text */
 .empty {
-  color: #6b7280; /* gray-500 */
+  color: #6b7280; 
   margin: 12px 0 18px;
 }
 
@@ -52,7 +51,7 @@
   justify-content: space-between;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e5e7eb; /* gray-200 */
+  border-top: 1px solid #e5e7eb; 
 }
 
 .itemsCount,

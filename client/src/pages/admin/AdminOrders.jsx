@@ -1,3 +1,4 @@
+//client\src\pages\admin\AdminOrders.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import Container from '../../components/Container';
@@ -54,9 +55,9 @@ export default function AdminOrders() {
   const [err, setErr] = useState('');
   const [orders, setOrders] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
-  const [userQuery, setUserQuery] = useState(''); // filter by user
-  const [edits, setEdits] = useState({});   // { [orderId]: 'shipped' }
-  const [saving, setSaving] = useState({}); // { [orderId]: boolean }
+  const [userQuery, setUserQuery] = useState(''); 
+  const [edits, setEdits] = useState({});   
+  const [saving, setSaving] = useState({}); 
 
   // Load orders (admin only)
   useEffect(() => {
@@ -80,7 +81,7 @@ export default function AdminOrders() {
 
         const res = await fetch(url.toString(), {
           credentials: 'include',
-          headers: { Accept: 'application/json', ...authHeaders() }, // ← add Bearer if present
+          headers: { Accept: 'application/json', ...authHeaders() }, 
         });
 
         const data = await res.json().catch(() => null);
@@ -141,7 +142,7 @@ export default function AdminOrders() {
       const res = await fetch(`${API_URL}/orders/${id}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() }, // ← add Bearer if present
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }, 
         body: JSON.stringify({ status: nextStatus }),
       });
 

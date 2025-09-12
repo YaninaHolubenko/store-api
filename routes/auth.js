@@ -6,8 +6,8 @@ const { validationResult } = require('express-validator');
 const { registerRules, loginRules } = require('../validators/auth');
 const authController = require('../controllers/authController');
 const passport = require('passport');
-const jwt = require('jsonwebtoken'); // keep temporarily for compatibility
-const User = require('../models/user'); // <-- used to enrich session with role
+const jwt = require('jsonwebtoken'); 
+const User = require('../models/user'); 
 
 // Rate limiter for auth endpoints:
 // - max 20 registrations per hour per IP

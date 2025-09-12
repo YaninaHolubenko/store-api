@@ -1,4 +1,4 @@
-/*AdminHome.module.css*/
+/* client\src\pages\admin\AdminHome.module.css*/
 .title {
   margin: 8px 0 18px;
 }
@@ -31,7 +31,7 @@
 }
 
 .cardDesc {
-  color: #6b7280; /* gray-500 */
+  color: #6b7280; 
   font-size: 0.95rem;
 }
 

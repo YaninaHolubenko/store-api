@@ -1,4 +1,4 @@
-/* Default placeholder; can be overridden by passing placeholderClassName */
+/* client\src\components\ui\ImageWithFallback.module.css */
 .placeholder {
   height: 300px;
   border: 1px dashed #ddd;
