@@ -1,13 +1,25 @@
 // Import products from DummyJSON + create/link categories.
-// Works with two schemas:
-// A) products has category_id column (1:N)
-// B) product_categories exists (N:M pivot)
-//
-// Comments are in English only.
+// Works both on Render (DATABASE_URL) and locally (knexfile.js).
 
 require('dotenv').config();
-const knexConfig = require('../knexfile.js');
-const knex = require('knex')(knexConfig.development);
+
+const knexfile = require('../knexfile.js');
+const knexLib = require('knex');
+
+// --- choose connection source ---
+// On Render we have DATABASE_URL; locally we use knexfile.development.
+const resolvedConfig = process.env.DATABASE_URL
+  ? {
+      client: 'pg',
+      connection: {
+        connectionString: process.env.DATABASE_URL, // Render external connection string
+        ssl: { rejectUnauthorized: false },         // required on Render
+      },
+      pool: { min: 0, max: 5 },
+    }
+  : knexfile.development;
+
+const knex = knexLib(resolvedConfig);
 
 // Use global fetch (Node 18+) or fall back to node-fetch v2
 let fetchFn = global.fetch;
@@ -33,7 +45,7 @@ function toTitleCase(s) {
 }
 
 async function main() {
-  console.log('[import] Start. DB =', process.env.PG_DATABASE);
+  console.log('[import] Start. Using', process.env.DATABASE_URL ? 'DATABASE_URL' : 'knexfile.development');
 
   const hasProducts = await tableExists('products');
   if (!hasProducts) throw new Error('Table "products" not found');
@@ -82,15 +94,17 @@ async function main() {
     const missing = categoryNames.filter((n) => !categoryIdByName.has(n));
     if (missing.length) {
       const rows = missing.map((name) => ({
-        name,                    // keep backend name as-is (slug-like, e.g. "smartphones")
-        display_name: toTitleCase(name), // optional if you have this column
+        name,                          // keep backend name as-is (slug-like, e.g. "smartphones")
+        display_name: toTitleCase(name) // optional if you have this column
       }));
-      // Only columns that exist will be used
+
+      // Keep only existing columns
       let insertRows = rows;
       const hasDisplay = await columnExists('categories', 'display_name');
       if (!hasDisplay) {
         insertRows = rows.map(r => ({ name: r.name }));
       }
+
       const inserted = await knex('categories').insert(insertRows).returning(['id', 'name']);
       inserted.forEach((c) => categoryIdByName.set(c.name, c.id));
       console.log(`[import] inserted categories: ${inserted.length}`);
