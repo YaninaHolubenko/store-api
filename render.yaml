@@ -11,30 +11,36 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+
       - key: DATABASE_URL
-        fromDatabase:
-          name: store-db
-          property: connectionString
+        sync: false
+
       - key: JWT_SECRET
-        value: change-me-in-dashboard
+        sync: false
+
       - key: SESSION_SECRET
-        value: change-me-in-dashboard
+        sync: false
+
       - key: STRIPE_SECRET_KEY
-        value: change-me-in-dashboard
+        sync: false
+
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
       - key: CLIENT_URLS
-        value: "http://localhost:5173"
+        value: "https://store-client-ltdg.onrender.com,http://localhost:5173"
+
       - key: CLIENT_URL
-        value: "http://localhost:5173"
+        value: "https://store-client-ltdg.onrender.com"
+
       - key: STRIPE_CURRENCY
         value: gbp
+
       - key: SWAGGER_ENABLED
         value: "true"
+
       - key: SESSION_TTL_MS
         value: "604800000"
-
-databases:
-  - name: store-db
-    plan: free
-    region: frankfurt
-    databaseName: store_db
-    user: store_user
